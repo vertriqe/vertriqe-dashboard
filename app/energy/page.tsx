@@ -27,6 +27,15 @@ interface TSDBResponse {
   }
 }
 
+interface TSDBConfig {
+  success: boolean
+  data: {
+    multipliers: Record<string, number>
+    units: Record<string, string>
+    offsets: Record<string, number>
+  }
+}
+
 interface ChartData {
   labels: string[]
   datasets: {
@@ -35,27 +44,78 @@ interface ChartData {
     borderColor: string
     backgroundColor: string
     tension?: number
+    fill?: boolean
+    pointRadius?: number
+    pointHoverRadius?: number
   }[]
 }
 
 export default function EnergyDashboard() {
   const [activeTab, setActiveTab] = useState("60mins")
   const [activeAggregation, setActiveAggregation] = useState("avg")
-  const [selectedOffice, setSelectedOffice] = useState("office-ac-1")
+  const [selectedOffice, setSelectedOffice] = useState("vertriqe_24833_cttp")
   const [chartData, setChartData] = useState<ChartData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [tsdbConfig, setTsdbConfig] = useState<TSDBConfig | null>(null)
+  const [currentUnit, setCurrentUnit] = useState("A")
   const currentDate = getCurrentFormattedDate()
 
   const timeRanges = {
     "60mins": { label: "60 Mins", seconds: 3600, downsampling: 60 },
     "24hours": { label: "24 Hours", seconds: 86400, downsampling: 3600 },
     "30days": { label: "30 Days", seconds: 2592000, downsampling: 86400 },
-    "12months": { label: "12 Months", seconds: 31536000, downsampling: 2592000 },
-    "custom": { label: "Custom", seconds: 86400, downsampling: 3600 }
+    "12months": { label: "12 Months", seconds: 31536000, downsampling: 2592000 }
   }
 
   const aggregationTypes = ["max", "min", "avg", "sum"]
+
+  // Available sensors with their display names
+  const availableSensors = {
+    "vertriqe_24833_cttp": "Hai Sang Cold Room Power Consumption",
+    "vertriqe_24836_temp2": "Hai Sang Cold Room Tempeture"
+  }
+
+  // Function to get the appropriate multiplier, unit, and offset for a key
+  const getKeyConfig = (key: string) => {
+    if (!tsdbConfig) return { multiplier: 1, unit: "", offset: 0 }
+
+    // Find matching pattern in config
+    for (const pattern in tsdbConfig.data.multipliers) {
+      const regex = new RegExp(pattern.replace('*', '.*'))
+      if (regex.test(key)) {
+        return {
+          multiplier: tsdbConfig.data.multipliers[pattern] || 1,
+          unit: tsdbConfig.data.units[pattern] || "",
+          offset: tsdbConfig.data.offsets[pattern] || 0
+        }
+      }
+    }
+    return { multiplier: 1, unit: "", offset: 0 }
+  }
+
+  // Fetch TSDB configuration
+  const fetchTsdbConfig = async () => {
+    try {
+      const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ operation: "getapiurlconfig" })
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch TSDB config")
+      }
+
+      const config: TSDBConfig = await response.json()
+      setTsdbConfig(config)
+      console.log("TSDB Config loaded:", config)
+    } catch (err) {
+      console.error("Error fetching TSDB config:", err)
+    }
+  }
 
   const fetchEnergyData = async () => {
     setIsLoading(true)
@@ -68,12 +128,11 @@ export default function EnergyDashboard() {
 
       const payload = {
         operation: "read",
-        key: "vertriqe_18223_temp", // This would be dynamic based on selected office
+        key: selectedOffice, // Use the selected sensor key
         Read: {
           start_timestamp: startTimestamp,
           end_timestamp: now,
           downsampling: timeRange.downsampling,
-          lastx: 50, // Get last 50 data points
           aggregation: activeAggregation
         }
       }
@@ -94,6 +153,10 @@ export default function EnergyDashboard() {
       const result: TSDBResponse = await response.json()
 
       if (result.success && result.data.success) {
+        // Get configuration for the selected key
+        const keyConfig = getKeyConfig(selectedOffice)
+        setCurrentUnit(keyConfig.unit)
+
         // Convert the data to chart format
         const labels = result.data.data.map(point => {
           const date = new Date(point.timestamp * 1000)
@@ -106,19 +169,19 @@ export default function EnergyDashboard() {
           }
         })
 
-        // Scale the values to look more like the reference chart (0.2 -> 3.0 range)
+        // Apply TSDB configuration: multiply by multiplier and add offset
         const values = result.data.data.map(point => {
-          // Create a more dramatic energy consumption pattern
-          const baseValue = point.value * 15 // Scale up from 0.2 to ~3.0
-          // Add some variation to make it look more realistic
-          const variation = Math.sin(point.timestamp / 10000) * 0.1
-          return Math.max(0.5, baseValue + variation)
+          let processedValue = point.value * keyConfig.multiplier + keyConfig.offset
+          // Ensure we have reasonable values for display
+          return processedValue
         })
+
+        const sensorName = availableSensors[selectedOffice as keyof typeof availableSensors] || selectedOffice
 
         setChartData({
           labels,
           datasets: [{
-            label: "Energy Consumption",
+            label: `${sensorName} (${keyConfig.unit})`,
             data: values,
             borderColor: "#22d3ee", // Cyan color like in the reference
             backgroundColor: "rgba(34, 211, 238, 0.1)",
@@ -139,28 +202,38 @@ export default function EnergyDashboard() {
     }
   }
 
+  // Fetch TSDB config on component mount
   useEffect(() => {
-    fetchEnergyData()
-  }, [activeTab, activeAggregation, selectedOffice])
+    fetchTsdbConfig()
+  }, [])
+
+  // Fetch energy data when dependencies change
+  useEffect(() => {
+    if (tsdbConfig) {
+      fetchEnergyData()
+    }
+  }, [activeTab, activeAggregation, selectedOffice, tsdbConfig])
 
   const handleExportData = () => {
     if (!chartData) return
-    
+
+    const sensorName = availableSensors[selectedOffice as keyof typeof availableSensors] || selectedOffice
+
     // Create CSV content
     const csvContent = [
-      ["Time", "Energy (kWh)"],
+      ["Time", `${sensorName} (${currentUnit})`],
       ...chartData.labels.map((label, index) => [
         label,
         chartData.datasets[0].data[index]?.toString() || "0"
       ])
     ].map(row => row.join(",")).join("\n")
-    
+
     // Download CSV
     const blob = new Blob([csvContent], { type: "text/csv" })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `energy-data-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`
+    a.download = `${sensorName.replace(/\s+/g, '-')}-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -185,17 +258,19 @@ export default function EnergyDashboard() {
           </div>
         </div>
 
-        {/* Dashboard Title and Office Selector */}
+        {/* Dashboard Title and Sensor Selector */}
         <div className="flex items-center gap-4 mb-6">
           <h2 className="text-3xl font-semibold">Energy Dashboard</h2>
           <Select value={selectedOffice} onValueChange={setSelectedOffice}>
-            <SelectTrigger className="w-40 bg-slate-700 border-slate-600">
+            <SelectTrigger className="w-auto bg-slate-700 border-slate-600">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-slate-700 border-slate-600">
-              <SelectItem value="office-ac-1">Office AC 1</SelectItem>
-              <SelectItem value="office-ac-2">Office AC 2</SelectItem>
-              <SelectItem value="office-ac-3">Office AC 3</SelectItem>
+              {Object.entries(availableSensors).map(([key, name]) => (
+                <SelectItem key={key} value={key}>
+                  {name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -217,9 +292,6 @@ export default function EnergyDashboard() {
                 </TabsTrigger>
                 <TabsTrigger value="12months" className="data-[state=active]:bg-blue-600">
                   12 Months
-                </TabsTrigger>
-                <TabsTrigger value="custom" className="data-[state=active]:bg-blue-600">
-                  Custom
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -258,7 +330,7 @@ export default function EnergyDashboard() {
             ) : chartData ? (
               <div className="h-96">
                 <div className="flex justify-between items-center mb-4">
-                  <div className="text-sm text-slate-400">kWh</div>
+                  <div className="text-sm text-slate-400">{currentUnit}</div>
                   <Button
                     onClick={handleExportData}
                     variant="outline"
@@ -269,7 +341,7 @@ export default function EnergyDashboard() {
                     Export Data
                   </Button>
                 </div>
-                <LineChart data={chartData} className="h-full" yAxisMax={3.5} />
+                <LineChart data={chartData} className="h-full" />
               </div>
             ) : (
               <div className="flex justify-center items-center h-96 text-slate-400">
