@@ -4,8 +4,8 @@ import { jwtVerify } from "jose"
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow access to login page and API auth routes without authentication
-  if (pathname === "/login" || pathname.startsWith("/api/auth")) {
+  // Allow access to login page, API auth routes, and energy dashboard without authentication
+  if (pathname === "/login" || pathname.startsWith("/api/auth") || pathname === "/energy" || pathname.startsWith("/api/tsdb")) {
     return NextResponse.next()
   }
 

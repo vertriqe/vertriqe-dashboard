@@ -3,7 +3,7 @@ import { redis } from "@/lib/redis"
 
 export async function POST() {
   try {
-    // Sample user data to store in Redis
+    // Sample user data to store in Redis (including the required dummy user)
     const users = [
       {
         email: "abby@abby.md",

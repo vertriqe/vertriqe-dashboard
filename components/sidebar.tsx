@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Briefcase, Users } from "lucide-react"
+import { Home, Briefcase, Users, Zap } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LogoutButton } from "./logout-button"
@@ -16,6 +16,12 @@ export function Sidebar() {
       icon: Home,
       label: "Dashboard",
       isActive: pathname === "/",
+    },
+    {
+      href: "/energy",
+      icon: Zap,
+      label: "Energy Dashboard",
+      isActive: pathname === "/energy",
     },
     {
       href: "/performance",
