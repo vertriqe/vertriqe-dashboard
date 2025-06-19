@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -246,7 +247,13 @@ export default function EnergyDashboard() {
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-2xl font-semibold">Hello VERTRIQE</h1>
+            <Image
+              src="/images/vertriqe-logo.png"
+              alt="VERTRIQE Logo"
+              width={120}
+              height={36}
+              className="h-auto filter brightness-0 invert"
+            />
           </div>
           <div className="text-right">
             <div className="text-lg">{currentDate}</div>
