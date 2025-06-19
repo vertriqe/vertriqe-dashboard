@@ -13,5 +13,6 @@ export default function RootLayout({
 import './globals.css'
 
 export const metadata = {
-      generator: 'v0.dev'
-    };
+  title: 'VERTRIQE Adest',
+  description: 'AI-Driven Energy Saving Technology',
+};
