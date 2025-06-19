@@ -86,7 +86,7 @@ export default function LoginPage() {
               priority
             />
           </div>
-          <p className="text-slate-400">Energy Management System</p>
+          <p className="text-slate-400">AI-Driven Energy Saving Technology</p>
         </div>
 
         <Card className="bg-slate-800 border-slate-700">
