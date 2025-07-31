@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Cloud, Download } from "lucide-react"
 import { LineChart } from "@/components/line-chart"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
+import { useUser } from "@/contexts/user-context"
 
 interface TSDBDataPoint {
   key: string
@@ -52,9 +53,10 @@ interface ChartData {
 }
 
 export default function EnergyDashboard() {
+  const { user } = useUser()
   const [activeTab, setActiveTab] = useState("60mins")
   const [activeAggregation, setActiveAggregation] = useState("avg")
-  const [selectedOffice, setSelectedOffice] = useState("vertriqe_24833_cttp")
+  const [selectedOffice, setSelectedOffice] = useState("")
   const [chartData, setChartData] = useState<ChartData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -71,11 +73,31 @@ export default function EnergyDashboard() {
 
   const aggregationTypes = ["max", "min", "avg", "sum"]
 
-  // Available sensors with their display names
-  const availableSensors = {
-    "vertriqe_24833_cttp": "Hai Sang Cold Room Power Consumption",
-    "vertriqe_24836_temp2": "Hai Sang Cold Room Tempeture"
+  // All available sensors with their display names and user ownership
+  const allSensors = {
+    // Hai Sang's sensors
+    "vertriqe_24833_cttp": { name: "Hai Sang Cold Room Power Consumption", owner: "Hai Sang" },
+    "vertriqe_24836_temp2": { name: "Hai Sang Cold Room Temperature", owner: "Hai Sang" },
+    
+    // The Hunt's sensors
+    "vertriqe_25120_cctp": { name: "The Hunt Energy Meter 25120 (Cumulative)", owner: "The Hunt" },
+    "vertriqe_25120_cttp": { name: "The Hunt Energy Meter 25120 (Instant)", owner: "The Hunt" },
+    "vertriqe_25121_cctp": { name: "The Hunt Energy Meter 25121 (Cumulative)", owner: "The Hunt" },
+    "vertriqe_25121_cttp": { name: "The Hunt Energy Meter 25121 (Instant)", owner: "The Hunt" },
+    "vertriqe_25122_cctp": { name: "The Hunt Energy Meter 25122 (Cumulative)", owner: "The Hunt" },
+    "vertriqe_25122_cttp": { name: "The Hunt Energy Meter 25122 (Instant)", owner: "The Hunt" },
+    "vertriqe_25123_cctp": { name: "The Hunt Energy Meter 25123 (Cumulative)", owner: "The Hunt" },
+    "vertriqe_25123_cttp": { name: "The Hunt Energy Meter 25123 (Instant)", owner: "The Hunt" },
+    "vertriqe_25124_cctp": { name: "The Hunt Energy Meter 25124 (Cumulative)", owner: "The Hunt" },
+    "vertriqe_25124_cttp": { name: "The Hunt Energy Meter 25124 (Instant)", owner: "The Hunt" }
   }
+
+  // Filter sensors based on current user
+  const availableSensors = user?.name 
+    ? Object.fromEntries(
+        Object.entries(allSensors).filter(([_, sensor]) => sensor.owner === user.name)
+      )
+    : {}
 
   // Function to get the appropriate multiplier, unit, and offset for a key
   const getKeyConfig = (key: string) => {
@@ -177,7 +199,7 @@ export default function EnergyDashboard() {
           return processedValue
         })
 
-        const sensorName = availableSensors[selectedOffice as keyof typeof availableSensors] || selectedOffice
+        const sensorName = availableSensors[selectedOffice as keyof typeof availableSensors]?.name || selectedOffice
 
         setChartData({
           labels,
@@ -203,6 +225,14 @@ export default function EnergyDashboard() {
     }
   }
 
+  // Set default sensor when user data becomes available
+  useEffect(() => {
+    if (user?.name && Object.keys(availableSensors).length > 0 && !selectedOffice) {
+      const firstSensorKey = Object.keys(availableSensors)[0]
+      setSelectedOffice(firstSensorKey)
+    }
+  }, [user, availableSensors, selectedOffice])
+
   // Fetch TSDB config on component mount
   useEffect(() => {
     fetchTsdbConfig()
@@ -210,7 +240,7 @@ export default function EnergyDashboard() {
 
   // Fetch energy data when dependencies change
   useEffect(() => {
-    if (tsdbConfig) {
+    if (tsdbConfig && selectedOffice) {
       fetchEnergyData()
     }
   }, [activeTab, activeAggregation, selectedOffice, tsdbConfig])
@@ -218,7 +248,7 @@ export default function EnergyDashboard() {
   const handleExportData = () => {
     if (!chartData) return
 
-    const sensorName = availableSensors[selectedOffice as keyof typeof availableSensors] || selectedOffice
+    const sensorName = availableSensors[selectedOffice as keyof typeof availableSensors]?.name || selectedOffice
 
     // Create CSV content
     const csvContent = [
@@ -268,18 +298,30 @@ export default function EnergyDashboard() {
         {/* Dashboard Title and Sensor Selector */}
         <div className="flex items-center gap-4 mb-6">
           <h2 className="text-3xl font-semibold">Energy Dashboard</h2>
-          <Select value={selectedOffice} onValueChange={setSelectedOffice}>
-            <SelectTrigger className="w-auto bg-slate-700 border-slate-600">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-700 border-slate-600">
-              {Object.entries(availableSensors).map(([key, name]) => (
-                <SelectItem key={key} value={key}>
-                  {name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {user?.name && (
+            <>
+              <span className="text-slate-400">-</span>
+              <span className="text-lg text-slate-300">{user.name}</span>
+            </>
+          )}
+          {Object.keys(availableSensors).length > 0 ? (
+            <Select value={selectedOffice} onValueChange={setSelectedOffice}>
+              <SelectTrigger className="w-auto bg-slate-700 border-slate-600">
+                <SelectValue placeholder="Select a sensor" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-700 border-slate-600">
+                {Object.entries(availableSensors).map(([key, sensor]) => (
+                  <SelectItem key={key} value={key}>
+                    {sensor.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : user?.name ? (
+            <div className="text-slate-400 text-sm">No sensors available for {user.name}</div>
+          ) : (
+            <div className="text-slate-400 text-sm">Loading user data...</div>
+          )}
         </div>
 
         {/* Time Period and Aggregation Controls */}

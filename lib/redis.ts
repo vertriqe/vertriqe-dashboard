@@ -1,25 +1,25 @@
-import { Redis } from "@upstash/redis"
+import Redis from "ioredis"
 
-// Use in-memory storage if environment variables are not set
-const useMemoryStorage = !process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN
+// Use in-memory storage if Redis URL is not set
+const useMemoryStorage = !process.env.REDIS_URL
 
 // In-memory storage for when Redis is not available
 const memoryStore = new Map<string, any>()
 
 if (useMemoryStorage) {
-  console.log("Using in-memory storage (Redis environment variables not set)")
+  console.log("Using in-memory storage (Redis URL not set)")
 } else {
-  console.log("Using Upstash Redis")
-  console.log("Redis URL:", process.env.KV_REST_API_URL)
-  console.log("Redis Token exists:", !!process.env.KV_REST_API_TOKEN)
+  console.log("Using Redis Cloud")
+  console.log("Redis URL:", process.env.REDIS_URL?.replace(/:[^:]*@/, ':****@')) // Hide password in logs
 }
 
-// Create Redis instance only if we have proper Upstash credentials
+// Create Redis instance only if we have proper Redis URL
 const redisInstance = useMemoryStorage
   ? null
-  : new Redis({
-      url: process.env.KV_REST_API_URL!,
-      token: process.env.KV_REST_API_TOKEN!,
+  : new Redis(process.env.REDIS_URL!, {
+      retryDelayOnFailover: 100,
+      maxRetriesPerRequest: 3,
+      lazyConnect: true,
     })
 
 // Create a wrapper that uses memory storage or Redis based on configuration
@@ -91,7 +91,33 @@ export const redis = {
   }
 }
 
-// Initialize storage and create dummy user
+// Get default users from environment variable
+const getDefaultUsers = () => {
+  try {
+    const defaultUsersEnv = process.env.DEFAULT_USERS
+    if (defaultUsersEnv) {
+      return JSON.parse(defaultUsersEnv)
+    }
+  } catch (error) {
+    console.warn("Failed to parse DEFAULT_USERS environment variable:", error)
+  }
+  
+  // Fallback to hardcoded users if env var is not set or invalid
+  return [
+    {
+      name: "Hai Sang",
+      email: "abby@abby.md",
+      password: "aassddff",
+    },
+    {
+      name: "The Hunt", 
+      email: "hunt@vertriqe.com",
+      password: "huntpass123",
+    }
+  ]
+}
+
+// Initialize storage and create dummy users
 const initializeStorage = async () => {
   try {
     console.log("Initializing storage...")
@@ -106,17 +132,15 @@ const initializeStorage = async () => {
       console.log("Corrupted data cleaned up")
     }
 
-    // If no user data exists, create dummy user
+    // If no user data exists, create default users
     if (!testData) {
-      console.log("No user data found, creating dummy user...")
-      const dummyUsers = [
-        {
-          email: "abby@abby.md",
-          password: "aassddff",
-        }
-      ]
-      await redis.set("vertriqe_auth", JSON.stringify(dummyUsers))
-      console.log("Dummy user created: abby@abby.md / aassddff")
+      console.log("No user data found, creating default users...")
+      const defaultUsers = getDefaultUsers()
+      await redis.set("vertriqe_auth", JSON.stringify(defaultUsers))
+      console.log("Default users created:")
+      defaultUsers.forEach((user: any) => {
+        console.log(`  - ${user.name} (${user.email})`)
+      })
     } else {
       console.log("User data already exists")
     }
@@ -124,16 +148,14 @@ const initializeStorage = async () => {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error("Error during storage initialization:", errorMessage)
 
-    // Always ensure dummy user exists
-    console.log("Ensuring dummy user exists...")
-    const dummyUsers = [
-      {
-        email: "abby@abby.md",
-        password: "aassddff",
-      }
-    ]
-    await redis.set("vertriqe_auth", JSON.stringify(dummyUsers))
-    console.log("Dummy user ensured: abby@abby.md / aassddff")
+    // Always ensure default users exist
+    console.log("Ensuring default users exist...")
+    const defaultUsers = getDefaultUsers()
+    await redis.set("vertriqe_auth", JSON.stringify(defaultUsers))
+    console.log("Default users ensured:")
+    defaultUsers.forEach((user: any) => {
+      console.log(`  - ${user.name} (${user.email})`)
+    })
   }
 }
 

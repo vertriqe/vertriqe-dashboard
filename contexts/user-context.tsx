@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 
 interface UserContextType {
   user: {
+    name: string
     email: string
   } | null
   isLoading: boolean
@@ -15,7 +16,7 @@ const UserContext = createContext<UserContextType>({
 })
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<{ email: string } | null>(null)
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {

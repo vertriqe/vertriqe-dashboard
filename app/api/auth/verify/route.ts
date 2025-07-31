@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       authenticated: true,
-      user: { email: payload.email },
+      user: { name: payload.name, email: payload.email },
     })
   } catch (error) {
     return NextResponse.json({ authenticated: false }, { status: 401 })

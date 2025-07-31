@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 import { SignJWT } from "jose"
 
 interface User {
+  name: string
   email: string
   password: string
 }
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
 
       console.log(
         "Parsed users:",
-        users.map((u) => ({ email: u.email })),
+        users.map((u) => ({ name: u.name, email: u.email })),
       )
     } catch (error) {
       console.error("JSON parse error:", error)
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     // Create JWT token
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
-    const token = await new SignJWT({ email: user.email })
+    const token = await new SignJWT({ email: user.email, name: user.name })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("24h")
@@ -87,8 +88,8 @@ export async function POST(request: NextRequest) {
       path: "/",
     })
 
-    console.log("Login successful for:", email)
-    return NextResponse.json({ message: "Login successful", user: { email: user.email } })
+    console.log("Login successful for:", user.name, `(${email})`)
+    return NextResponse.json({ message: "Login successful", user: { name: user.name, email: user.email } })
   } catch (error) {
     console.error("Login error:", error)
     return NextResponse.json(
