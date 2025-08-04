@@ -17,7 +17,6 @@ if (useMemoryStorage) {
 const redisInstance = useMemoryStorage
   ? null
   : new Redis(process.env.REDIS_URL!, {
-      retryDelayOnFailover: 100,
       maxRetriesPerRequest: 3,
       lazyConnect: true,
     })
@@ -39,14 +38,18 @@ export const redis = {
     }
   },
 
-  async set(key: string, value: any) {
+  async set(key: string, value: any, ttlSeconds?: number) {
     if (useMemoryStorage || !redisInstance) {
       memoryStore.set(key, value)
       return "OK"
     }
 
     try {
-      await redisInstance.set(key, value)
+      if (ttlSeconds) {
+        await redisInstance.set(key, value, 'EX', ttlSeconds)
+      } else {
+        await redisInstance.set(key, value)
+      }
       // Also store in memory as backup
       memoryStore.set(key, value)
       return "OK"

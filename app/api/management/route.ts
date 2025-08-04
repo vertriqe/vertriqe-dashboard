@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { redis } from "@/lib/redis"
-import { fetchWeatherData, fetchForecastData, processWeatherData, type WeatherLocation } from "@/lib/weather-service"
+import { fetchWeatherData, processWeatherData, type WeatherLocation } from "@/lib/weather-service"
 
 async function getUserFromToken(): Promise<string | null> {
   try {
@@ -68,10 +68,9 @@ export async function GET() {
     // Fetch real weather data
     let weatherInfo
     const currentWeatherData = await fetchWeatherData(userLocation.lat, userLocation.lon)
-    const forecastData = await fetchForecastData(userLocation.lat, userLocation.lon, 1)
 
     if (currentWeatherData) {
-      const processedData = processWeatherData(currentWeatherData, forecastData)
+      const processedData = processWeatherData(currentWeatherData)
       weatherInfo = {
         condition: processedData.forecast.condition,
         range: processedData.forecast.range,

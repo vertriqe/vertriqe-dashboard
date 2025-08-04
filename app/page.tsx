@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Cloud, Sun, ExternalLink } from "lucide-react"
+import { Cloud, Sun, ExternalLink, Info } from "lucide-react"
 import { LineChart } from "@/components/line-chart"
 import { useUser } from "@/contexts/user-context"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
@@ -39,6 +39,12 @@ interface DashboardData {
     totalSaving: string
     co2Reduced: string
     energySaved: string
+    calculationInfo?: {
+      savingsPercentage: number
+      co2Factor: number
+      costPerKwh: number
+      latestCumulative: number
+    }
   }
 }
 
@@ -48,6 +54,7 @@ export default function Dashboard() {
   const [esgNews, setEsgNews] = useState<RssItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isNewsLoading, setIsNewsLoading] = useState(true)
+  const [showCalculationInfo, setShowCalculationInfo] = useState<string | null>(null)
   const { user } = useUser()
   const currentDate = getCurrentFormattedDate()
 
@@ -97,6 +104,25 @@ export default function Dashboard() {
     if (conditionLower.includes("sun") || conditionLower.includes("clear"))
       return <Sun className="h-6 w-6 text-yellow-300" />
     return <Cloud className="h-6 w-6 text-slate-300" />
+  }
+
+  // Generate calculation info for metrics
+  const getCalculationInfo = (type: string) => {
+    const calc = dashboardData?.energySavings.calculationInfo
+    if (!calc) return null
+
+    switch (type) {
+      case 'energySaved':
+        return `Latest cumulative sum (${calc.latestCumulative.toFixed(1)} kWh) × ${calc.savingsPercentage}% = ${(calc.latestCumulative * calc.savingsPercentage / 100).toFixed(1)} kWh`
+      case 'co2Reduced':
+        const energySaved = calc.latestCumulative * calc.savingsPercentage / 100
+        return `Energy saved (${energySaved.toFixed(1)} kWh) × ${calc.co2Factor} kg/kWh = ${(energySaved * calc.co2Factor).toFixed(1)} kg CO2`
+      case 'totalSaving':
+        const energySavedForCost = calc.latestCumulative * calc.savingsPercentage / 100
+        return `Energy saved (${energySavedForCost.toFixed(1)} kWh) × ${calc.costPerKwh} HKD/kWh = ${(energySavedForCost * calc.costPerKwh).toFixed(1)} HKD`
+      default:
+        return null
+    }
   }
 
   return (
@@ -226,31 +252,76 @@ export default function Dashboard() {
 
             {/* Metrics Cards */}
             <div className="grid grid-cols-3 gap-4 mt-6">
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-slate-800 border-slate-700 relative">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                    <span className="text-sm">Total Saving</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
+                      <span className="text-sm">Total Saving</span>
+                    </div>
+                    {dashboardData.energySavings.calculationInfo && (
+                      <button
+                        onClick={() => setShowCalculationInfo(showCalculationInfo === 'totalSaving' ? null : 'totalSaving')}
+                        className="text-slate-400 hover:text-white transition-colors"
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                   <div className="text-2xl font-bold">{dashboardData.energySavings.totalSaving}</div>
+                  {showCalculationInfo === 'totalSaving' && (
+                    <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-700 border border-slate-600 rounded-md text-xs z-10">
+                      {getCalculationInfo('totalSaving')}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-slate-800 border-slate-700 relative">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                    <span className="text-sm">Total CO2 Reduced</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
+                      <span className="text-sm">Total CO2 Reduced</span>
+                    </div>
+                    {dashboardData.energySavings.calculationInfo && (
+                      <button
+                        onClick={() => setShowCalculationInfo(showCalculationInfo === 'co2Reduced' ? null : 'co2Reduced')}
+                        className="text-slate-400 hover:text-white transition-colors"
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                   <div className="text-2xl font-bold">{dashboardData.energySavings.co2Reduced}</div>
+                  {showCalculationInfo === 'co2Reduced' && (
+                    <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-700 border border-slate-600 rounded-md text-xs z-10">
+                      {getCalculationInfo('co2Reduced')}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-slate-800 border-slate-700 relative">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                    <span className="text-sm">Total Energy Saved</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
+                      <span className="text-sm">Total Energy Saved</span>
+                    </div>
+                    {dashboardData.energySavings.calculationInfo && (
+                      <button
+                        onClick={() => setShowCalculationInfo(showCalculationInfo === 'energySaved' ? null : 'energySaved')}
+                        className="text-slate-400 hover:text-white transition-colors"
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                   <div className="text-2xl font-bold">{dashboardData.energySavings.energySaved}</div>
+                  {showCalculationInfo === 'energySaved' && (
+                    <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-700 border border-slate-600 rounded-md text-xs z-10">
+                      {getCalculationInfo('energySaved')}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

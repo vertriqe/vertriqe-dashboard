@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { fetchWeatherData, fetchForecastData } from "@/lib/weather-service"
+import { fetchWeatherData } from "@/lib/weather-service"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -13,22 +13,16 @@ export async function GET(request: Request) {
     const currentWeather = await fetchWeatherData(lat, lon)
     console.log("Current weather result:", currentWeather ? "SUCCESS" : "FAILED")
 
-    // Test forecast
-    const forecast = await fetchForecastData(lat, lon, 7)
-    console.log("Forecast result:", forecast ? "SUCCESS" : "FAILED")
-
     return NextResponse.json({
       success: true,
       currentWeather: currentWeather ? "Data received" : "No data",
-      forecast: forecast ? "Data received" : "No data",
       currentWeatherData: currentWeather,
-      forecastData: forecast,
     })
   } catch (error) {
     console.error("Debug API error:", error)
     return NextResponse.json({
       success: false,
-      error: error.message,
+      error: (error as Error).message,
     })
   }
 }
