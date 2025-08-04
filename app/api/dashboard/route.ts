@@ -32,14 +32,79 @@ async function getEnergyConfig(): Promise<EnergyConfig> {
   
   // Return default config
   return {
-    savingsPercentage: 25.5,
+    savingsPercentage: 0,
     co2ReductionFactor: 11,
     costPerKwh: 1.317
   }
 }
 
+async function fetchTsdbConfig() {
+  try {
+    // Check Redis cache first
+    const cachedConfig = await redis.get("tsdb_config")
+    if (cachedConfig) {
+      console.log("✅ Using cached TSDB config")
+      return JSON.parse(cachedConfig as string)
+    }
+
+    console.log("🔧 Fetching TSDB config from API...")
+    const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ operation: "getapiurlconfig" })
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch TSDB config")
+    }
+
+    const config = await response.json()
+    
+    // Cache for 1 hour
+    await redis.set("tsdb_config", JSON.stringify(config), 3600)
+    
+    console.log("✅ TSDB config fetched and cached")
+    return config
+  } catch (error) {
+    console.error("Error fetching TSDB config:", error)
+    return null
+  }
+}
+
+function getKeyConfig(key: string, tsdbConfig: any) {
+  if (!tsdbConfig || !tsdbConfig.success) return { multiplier: 1, unit: "A", offset: 0 }
+
+  // Find matching pattern in config
+  for (const pattern in tsdbConfig.data.multipliers) {
+    const regex = new RegExp(pattern.replace('*', '.*'))
+    if (regex.test(key)) {
+      return {
+        multiplier: tsdbConfig.data.multipliers[pattern] || 1,
+        unit: tsdbConfig.data.units[pattern] || "A",
+        offset: tsdbConfig.data.offsets[pattern] || 0
+      }
+    }
+  }
+  return { multiplier: 1, unit: "A", offset: 0 }
+}
+
 async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
   try {
+    // Check Redis cache first (30 minutes TTL)
+    const cacheKey = "hunt_sensor_data"
+    const cachedData = await redis.get(cacheKey)
+    if (cachedData) {
+      console.log("✅ Using cached Hunt sensor data")
+      return JSON.parse(cachedData as string)
+    }
+
+    console.log("🔧 Fetching fresh Hunt sensor data...")
+    
+    // Get TSDB configuration for multipliers and units
+    const tsdbConfig = await fetchTsdbConfig()
+    
     // The Hunt's cumulative sensors
     const huntCumulativeSensors = [
       "vertriqe_25120_cctp",
@@ -61,7 +126,7 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
           start_timestamp: thirtyDaysAgo,
           end_timestamp: now,
           downsampling: 86400, // Daily aggregation
-          aggregation: "avg"
+          aggregation: "max" // Use max to get daily peak values
         }
       }
 
@@ -91,10 +156,14 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
     // Create a time-indexed map to sum values across sensors
     const timeValueMap = new Map<number, number>()
     
-    sensorResults.forEach(({ data }) => {
+    sensorResults.forEach(({ key, data }) => {
+      const keyConfig = getKeyConfig(key, tsdbConfig)
+      
       data.forEach((point: any) => {
+        // Apply multiplier and offset from TSDB config
+        const processedValue = point.value * keyConfig.multiplier + keyConfig.offset
         const existingValue = timeValueMap.get(point.timestamp) || 0
-        timeValueMap.set(point.timestamp, existingValue + point.value)
+        timeValueMap.set(point.timestamp, existingValue + processedValue)
       })
     })
     
@@ -103,7 +172,10 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
       .map(([timestamp, value]) => ({ timestamp, value }))
       .sort((a, b) => a.timestamp - b.timestamp)
 
-    console.log(`✅ Fetched data for ${huntCumulativeSensors.length} sensors, ${aggregatedData.length} data points`)
+    // Cache the processed data for 30 minutes (1800 seconds)
+    await redis.set(cacheKey, JSON.stringify(aggregatedData), 1800)
+    
+    console.log(`✅ Fetched and cached data for ${huntCumulativeSensors.length} sensors, ${aggregatedData.length} data points`)
     return aggregatedData
     
   } catch (error) {
@@ -129,9 +201,9 @@ function calculateEnergyMetrics(sensorData: HuntSensorData[], config: EnergyConf
   const latestCumulative = sensorData[sensorData.length - 1]?.value || 0
   
   // Calculate savings based on the latest cumulative sum
-  const energySaved = latestCumulative * (config.savingsPercentage / 100)
-  const co2Reduced = energySaved * config.co2ReductionFactor
-  const totalSaving = energySaved * config.costPerKwh
+  const energySaved = 0;// latestCumulative * (config.savingsPercentage / 100)
+  const co2Reduced = 0;// energySaved * config.co2ReductionFactor
+  const totalSaving = 0;// energySaved * config.costPerKwh
   
   // Extract actual usage values (convert to monthly aggregates if needed)
   const actualUsage = sensorData.map(point => point.value)
@@ -265,11 +337,17 @@ export async function GET() {
       // Calculate energy metrics
       const metrics = calculateEnergyMetrics(huntSensorData, config)
       
+      // Generate date labels for the last 30 days
+      const dateLabels = huntSensorData.map(point => {
+        const date = new Date(point.timestamp * 1000)
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })
+      })
+      
       energyUsageData = {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-        actualUsage: metrics.actualUsage.slice(-12), // Get last 12 months
-        energyForecast: metrics.energyForecast,
-        baselineForecast: metrics.baselineForecast.slice(-12), // Get last 12 months
+        labels: dateLabels.length > 0 ? dateLabels : ["No Data"],
+        actualUsage: huntSensorData.map(point => point.value), // Cumulative readings per day
+        energyForecast: [], // Empty for Hunt user
+        baselineForecast: [], // Empty for Hunt user
       }
       
       energySavingsData = {
@@ -287,22 +365,22 @@ export async function GET() {
       
       console.log("✅ Using real energy data for The Hunt")
     } else {
-      // Use dummy data for Hai Sang
+      // Use empty/minimal data for other users
       energyUsageData = {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-        actualUsage: [2000, 2200, 2300, 2300, 700, null, null, null, null, null, null, null],
-        energyForecast: [2200, 2400, 2300, 2500, 2800, 3500, 3400, 3200, 3000, 2800, 2200, 2300],
-        baselineForecast: [2500, 2700, 2800, 3000, 3300, 4800, 4900, 4700, 4500, 3800, 3200, 2800],
+        labels: ["No Data Available"],
+        actualUsage: [0],
+        energyForecast: [0],
+        baselineForecast: [0],
       }
       
       energySavingsData = {
-        percentage: "28.6%",
-        totalSaving: "7,009.9HKD",
-        co2Reduced: "3,397.7kg",
-        energySaved: "4,123.5kWh",
+        percentage: "0%",
+        totalSaving: "0HKD",
+        co2Reduced: "0kg",
+        energySaved: "0kWh",
       }
       
-      console.log("✅ Using dummy energy data for Hai Sang")
+      console.log("✅ Using minimal energy data for other users")
     }
 
     const dashboardData = {
@@ -317,24 +395,24 @@ export async function GET() {
   } catch (error) {
     console.error("❌ Dashboard API error:", error)
 
-    // Return dummy data on error
-    const dummyData = {
+    // Return minimal data on error
+    const fallbackData = {
       ...getDummyWeatherData(),
       energyUsage: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-        actualUsage: [2000, 2200, 2300, 2300, 700, null, null, null, null, null, null, null],
-        energyForecast: [2200, 2400, 2300, 2500, 2800, 3500, 3400, 3200, 3000, 2800, 2200, 2300],
-        baselineForecast: [2500, 2700, 2800, 3000, 3300, 4800, 4900, 4700, 4500, 3800, 3200, 2800],
+        labels: ["No Data Available"],
+        actualUsage: [0],
+        energyForecast: [0],
+        baselineForecast: [0],
       },
       energySavings: {
-        percentage: "28.6%",
-        totalSaving: "7,009.9HKD",
-        co2Reduced: "3,397.7kg",
-        energySaved: "4,123.5kWh",
+        percentage: "0%",
+        totalSaving: "0HKD",
+        co2Reduced: "0kg",
+        energySaved: "0kWh",
       },
     }
 
-    console.log("⚠️ Returning dummy data due to error")
-    return NextResponse.json(dummyData)
+    console.log("⚠️ Returning minimal data due to error")
+    return NextResponse.json(fallbackData)
   }
 }

@@ -85,7 +85,7 @@ export default function PerformancePage() {
                 height={36}
                 className="h-auto filter brightness-0 invert"
               />
-              <h1 className="text-2xl font-semibold">Hello {user?.email?.split("@")[0] || "User"}</h1>
+              <h1 className="text-2xl font-semibold">Hello {user?.name || "User"}</h1>
             </div>
             <h2 className="text-3xl font-bold mt-2">Performance Overview</h2>
           </div>

@@ -8,7 +8,7 @@ interface EnergyConfig {
 }
 
 const DEFAULT_CONFIG: EnergyConfig = {
-  savingsPercentage: 25.5,    // 25.5% savings
+  savingsPercentage: 0,    // 25.5% savings
   co2ReductionFactor: 11,     // 11 kg CO2 per kWh saved
   costPerKwh: 1.317          // 1.317 HKD per kWh
 }

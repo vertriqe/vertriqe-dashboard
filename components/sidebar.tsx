@@ -6,9 +6,12 @@ import { usePathname } from "next/navigation"
 import { LogoutButton } from "./logout-button"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useUser } from "@/contexts/user-context"
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { user } = useUser()
+  const isHuntUser = user?.name === "The Hunt"
 
   const navItems = [
     {
@@ -16,12 +19,14 @@ export function Sidebar() {
       icon: Home,
       label: "Dashboard",
       isActive: pathname === "/",
+      disabled: false,
     },
     {
       href: "/energy",
       icon: Zap,
       label: "Energy Dashboard",
       isActive: pathname === "/energy",
+      disabled: false,
     },
     {
       href: "/performance",
@@ -41,12 +46,21 @@ export function Sidebar() {
       ),
       label: "Performance",
       isActive: pathname === "/performance",
+      disabled: isHuntUser,
     },
     {
       href: "/management",
       icon: Briefcase,
       label: "Management",
       isActive: pathname === "/management",
+      disabled: isHuntUser,
+    },
+    {
+      href: "/users",
+      icon: Users,
+      label: "User Management",
+      isActive: pathname === "/users",
+      disabled: true,
     },
   ]
 
@@ -54,6 +68,21 @@ export function Sidebar() {
     <div className="w-16 bg-slate-900 h-full flex flex-col items-center py-6 border-r border-slate-800">
       {navItems.map((item) => {
         const IconComponent = item.icon
+        
+        if (item.disabled) {
+          return (
+            <Button
+              key={item.href}
+              variant="ghost"
+              className="p-3 rounded-lg mb-4 cursor-not-allowed opacity-50 text-slate-400"
+              disabled
+              title={`${item.label} (Coming Soon)`}
+            >
+              <IconComponent className="h-6 w-6" />
+            </Button>
+          )
+        }
+        
         return (
           <Link
             key={item.href}
@@ -68,16 +97,6 @@ export function Sidebar() {
           </Link>
         )
       })}
-
-      {/* Disabled Users button */}
-      <Button
-        variant="ghost"
-        className="p-3 rounded-lg mb-4 cursor-not-allowed opacity-50 text-slate-400"
-        disabled
-        title="User Management (Coming Soon)"
-      >
-        <Users className="h-6 w-6" />
-      </Button>
 
       <div className="mt-auto">
         <LogoutButton />

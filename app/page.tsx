@@ -57,6 +57,7 @@ export default function Dashboard() {
   const [showCalculationInfo, setShowCalculationInfo] = useState<string | null>(null)
   const { user } = useUser()
   const currentDate = getCurrentFormattedDate()
+  const isHuntUser = user?.name === "The Hunt"
 
   useEffect(() => {
     const fetchData = async () => {
@@ -137,7 +138,7 @@ export default function Dashboard() {
               height={36}
               className="h-auto filter brightness-0 invert"
             />
-            <h1 className="text-2xl font-semibold">Morning {user?.email?.split("@")[0] || "User"}</h1>
+            <h1 className="text-2xl font-semibold">Morning {user?.name || "User"}</h1>
           </div>
         </div>
 
@@ -201,39 +202,52 @@ export default function Dashboard() {
                     <div className="w-4 h-4 bg-blue-500"></div>
                     <span className="text-sm">Actual Usage</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-pink-500"></div>
-                    <span className="text-sm">Energy Forecast</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-white"></div>
-                    <span className="text-sm">Baseline Forecast</span>
-                  </div>
+                  {!isHuntUser && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-pink-500"></div>
+                        <span className="text-sm">Energy Forecast</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-white"></div>
+                        <span className="text-sm">Baseline Forecast</span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <LineChart
                   className="h-64 mt-4"
                   data={{
                     labels: dashboardData.energyUsage.labels,
-                    datasets: [
-                      {
-                        label: "Actual Usage",
-                        data: dashboardData.energyUsage.actualUsage,
-                        borderColor: "#3b82f6",
-                        backgroundColor: "#3b82f6",
-                      },
-                      {
-                        label: "Energy Forecast",
-                        data: dashboardData.energyUsage.energyForecast,
-                        borderColor: "#ec4899",
-                        backgroundColor: "#ec4899",
-                      },
-                      {
-                        label: "Baseline Forecast",
-                        data: dashboardData.energyUsage.baselineForecast,
-                        borderColor: "#ffffff",
-                        backgroundColor: "#ffffff",
-                      },
-                    ],
+                    datasets: isHuntUser 
+                      ? [
+                          {
+                            label: "Actual Usage",
+                            data: dashboardData.energyUsage.actualUsage,
+                            borderColor: "#3b82f6",
+                            backgroundColor: "#3b82f6",
+                          },
+                        ]
+                      : [
+                          {
+                            label: "Actual Usage",
+                            data: dashboardData.energyUsage.actualUsage,
+                            borderColor: "#3b82f6",
+                            backgroundColor: "#3b82f6",
+                          },
+                          {
+                            label: "Energy Forecast",
+                            data: dashboardData.energyUsage.energyForecast,
+                            borderColor: "#ec4899",
+                            backgroundColor: "#ec4899",
+                          },
+                          {
+                            label: "Baseline Forecast",
+                            data: dashboardData.energyUsage.baselineForecast,
+                            borderColor: "#ffffff",
+                            backgroundColor: "#ffffff",
+                          },
+                        ],
                   }}
                 />
               </CardContent>
@@ -243,10 +257,10 @@ export default function Dashboard() {
           {/* Energy Savings Section */}
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold mb-2">Congratulations {user?.email?.split("@")[0] || "User"}!</h2>
+              <h2 className="text-2xl font-semibold mb-2">Congratulations {user?.name || "User"}!</h2>
               <div>
                 <h3 className="text-xl">Total AC Energy Saved</h3>
-                <div className="text-7xl font-bold mt-2">{dashboardData.energySavings.percentage}</div>
+                <div className="text-7xl font-bold mt-2">0%</div>
               </div>
             </div>
 
