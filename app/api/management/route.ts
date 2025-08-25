@@ -4,6 +4,33 @@ import { jwtVerify } from "jose"
 import { redis } from "@/lib/redis"
 import { fetchWeatherData, processWeatherData, type WeatherLocation } from "@/lib/weather-service"
 
+interface TSDBDataPoint {
+  key: string
+  timestamp: number
+  value: number
+}
+
+interface TSDBResponse {
+  success: boolean
+  data: {
+    success: boolean
+    data: TSDBDataPoint[]
+    read_query_params: {
+      lastx: number
+      aggregation: string
+    }
+  }
+}
+
+interface TSDBConfig {
+  success: boolean
+  data: {
+    multipliers: Record<string, number>
+    units: Record<string, string>
+    offsets: Record<string, number>
+  }
+}
+
 async function getUserFromToken(): Promise<string | null> {
   try {
     const cookieStore = await cookies()
@@ -19,6 +46,83 @@ async function getUserFromToken(): Promise<string | null> {
     return payload.email as string
   } catch (error) {
     console.error("Error getting user from token:", error)
+    return null
+  }
+}
+
+async function fetchTsdbConfig(): Promise<TSDBConfig | null> {
+  try {
+    const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ operation: "getapiurlconfig" })
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch TSDB config")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Error fetching TSDB config:", error)
+    return null
+  }
+}
+
+function getKeyConfig(key: string, tsdbConfig: TSDBConfig | null) {
+  if (!tsdbConfig) return { multiplier: 1, unit: "", offset: 0 }
+
+  for (const pattern in tsdbConfig.data.multipliers) {
+    const regex = new RegExp(pattern.replace('*', '.*'))
+    if (regex.test(key)) {
+      return {
+        multiplier: tsdbConfig.data.multipliers[pattern] || 1,
+        unit: tsdbConfig.data.units[pattern] || "",
+        offset: tsdbConfig.data.offsets[pattern] || 0
+      }
+    }
+  }
+  return { multiplier: 1, unit: "", offset: 0 }
+}
+
+async function fetchSensorData(sensorKey: string): Promise<number | null> {
+  try {
+    const now = Math.floor(Date.now() / 1000)
+    const startTimestamp = now - 3600 // Last hour
+
+    const payload = {
+      operation: "read",
+      key: sensorKey,
+      Read: {
+        lastx: 1
+      }
+    }
+
+    const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sensor data for ${sensorKey}`)
+    }
+
+    const result: TSDBResponse = await response.json()
+
+    if (result.success && result.data.success && result.data.data.length > 0) {
+      // Get the latest data point
+      const latestPoint = result.data.data[result.data.data.length - 1]
+      return latestPoint.value
+    }
+
+    return null
+  } catch (error) {
+    console.error(`Error fetching sensor data for ${sensorKey}:`, error)
     return null
   }
 }
@@ -53,9 +157,6 @@ async function getUserLocation(email: string): Promise<WeatherLocation> {
 }
 
 export async function GET() {
-  // Simulate database fetch delay
-  await new Promise((resolve) => setTimeout(resolve, 700))
-
   try {
     const userEmail = await getUserFromToken()
 
@@ -64,6 +165,48 @@ export async function GET() {
     }
 
     const userLocation = await getUserLocation(userEmail)
+
+    // Fetch TSDB config
+    const tsdbConfig = await fetchTsdbConfig()
+
+    // Define zone sensors for The Hunt
+    const zoneSensors = [
+      {
+        id: 1,
+        name: "Area 1",
+        tempSensor: "vertriqe_25114_amb_temp",
+        humSensor: "vertriqe_25114_amb_hum",
+        savingModeEnabled: false,
+      },
+      {
+        id: 2,
+        name: "Area 2", 
+        tempSensor: "vertriqe_25115_amb_temp",
+        humSensor: "vertriqe_25115_amb_hum",
+        savingModeEnabled: false,
+      },
+      {
+        id: 3,
+        name: "Area 3",
+        tempSensor: "vertriqe_25116_amb_temp",
+        humSensor: "vertriqe_25116_amb_hum",
+        savingModeEnabled: false,
+      },
+      {
+        id: 4,
+        name: "Area 4",
+        tempSensor: "vertriqe_25117_amb_temp",
+        humSensor: "vertriqe_25117_amb_hum",
+        savingModeEnabled: false,
+      },
+      {
+        id: 5,
+        name: "Area 5",
+        tempSensor: "vertriqe_25118_amb_temp",
+        humSensor: "vertriqe_25118_amb_hum",
+        savingModeEnabled: false,
+      }
+    ]
 
     // Fetch real weather data
     let weatherInfo
@@ -82,6 +225,50 @@ export async function GET() {
       }
     }
 
+    // Fetch real sensor data for each zone
+    const zones = await Promise.all(
+      zoneSensors.map(async (zone) => {
+        try {
+          // Fetch temperature and humidity data
+          const [tempValue, humValue] = await Promise.all([
+            fetchSensorData(zone.tempSensor),
+            fetchSensorData(zone.humSensor)
+          ])
+
+          // Apply TSDB configuration
+          const tempConfig = getKeyConfig(zone.tempSensor, tsdbConfig)
+          const humConfig = getKeyConfig(zone.humSensor, tsdbConfig)
+          
+          const processedTemp = tempValue !== null 
+            ? (tempValue * tempConfig.multiplier + tempConfig.offset)
+            : null
+            
+          const processedHum = humValue !== null 
+            ? (humValue * humConfig.multiplier + humConfig.offset)
+            : null
+
+          return {
+            id: zone.id,
+            name: zone.name,
+            temperature: processedTemp !== null ? `${processedTemp.toFixed(1)}°C` : "N/A",
+            humidity: processedHum !== null ? `${processedHum.toFixed(0)}%` : "N/A",
+            image: "/placeholder.svg?height=200&width=400",
+            savingModeEnabled: zone.savingModeEnabled,
+          }
+        } catch (error) {
+          console.error(`Error processing zone ${zone.id}:`, error)
+          return {
+            id: zone.id,
+            name: zone.name,
+            temperature: "N/A",
+            humidity: "N/A", 
+            image: "/placeholder.svg?height=200&width=400",
+            savingModeEnabled: zone.savingModeEnabled,
+          }
+        }
+      })
+    )
+
     const managementData = {
       date: new Date().toLocaleDateString("en-US", {
         day: "numeric",
@@ -89,41 +276,8 @@ export async function GET() {
         year: "numeric",
       }),
       weather: weatherInfo,
-      estimatedSaving: "22.3%",
-      zones: [
-        {
-          id: 1,
-          name: "Office Zone A",
-          temperature: "24.7°C",
-          humidity: "68%",
-          image: "/placeholder.svg?height=200&width=400",
-          savingModeEnabled: true,
-        },
-        {
-          id: 2,
-          name: "Office Zone B",
-          temperature: "24.1°C",
-          humidity: "62%",
-          image: "/placeholder.svg?height=200&width=400",
-          savingModeEnabled: false,
-        },
-        {
-          id: 3,
-          name: "Pantry",
-          temperature: "24.2°C",
-          humidity: "58%",
-          image: "/placeholder.svg?height=200&width=400",
-          savingModeEnabled: true,
-        },
-        {
-          id: 4,
-          name: "Meeting Room A",
-          temperature: "25.2°C",
-          humidity: "72%",
-          image: "/placeholder.svg?height=200&width=400",
-          savingModeEnabled: false,
-        },
-      ],
+      estimatedSaving: "0%",
+      zones,
     }
 
     return NextResponse.json(managementData)
@@ -141,11 +295,11 @@ export async function GET() {
         condition: "Cloudy",
         range: "28/31°C",
       },
-      estimatedSaving: "22.3%",
+      estimatedSaving: "0%",
       zones: [
         {
           id: 1,
-          name: "Office Zone A",
+          name: "Area 1",
           temperature: "24.7°C",
           humidity: "68%",
           image: "/placeholder.svg?height=200&width=400",
@@ -153,7 +307,7 @@ export async function GET() {
         },
         {
           id: 2,
-          name: "Office Zone B",
+          name: "Area 2",
           temperature: "24.1°C",
           humidity: "62%",
           image: "/placeholder.svg?height=200&width=400",
@@ -161,7 +315,7 @@ export async function GET() {
         },
         {
           id: 3,
-          name: "Pantry",
+          name: "Area 3",
           temperature: "24.2°C",
           humidity: "58%",
           image: "/placeholder.svg?height=200&width=400",
@@ -169,11 +323,19 @@ export async function GET() {
         },
         {
           id: 4,
-          name: "Meeting Room A",
+          name: "Area 4",
           temperature: "25.2°C",
           humidity: "72%",
           image: "/placeholder.svg?height=200&width=400",
           savingModeEnabled: false,
+        },
+        {
+          id: 5,
+          name: "Area 5",
+          temperature: "23.8°C",
+          humidity: "65%",
+          image: "/placeholder.svg?height=200&width=400",
+          savingModeEnabled: true,
         },
       ],
     }

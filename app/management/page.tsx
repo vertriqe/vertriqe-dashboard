@@ -8,6 +8,7 @@ import { Thermometer, Droplets, HelpCircle, Leaf } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useUser } from "@/contexts/user-context"
+import { getLogoForUser } from "@/lib/logo-utils"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
 import Image from "next/image"
 
@@ -36,7 +37,9 @@ export default function ManagementPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSavingModeUpdating, setIsSavingModeUpdating] = useState(false)
   const { user } = useUser()
+  const logo = getLogoForUser(user?.email)
   const currentDate = getCurrentFormattedDate()
+  const isHuntUser = user?.name === "The Hunt"
 
   useEffect(() => {
     const fetchData = async () => {
@@ -119,8 +122,8 @@ export default function ManagementPage() {
           <div>
             <div className="flex items-center gap-4 mb-2">
               <Image
-                src="/images/vertriqe-logo.png"
-                alt="VERTRIQE Logo"
+                src={logo.src}
+                alt={logo.alt}
                 width={120}
                 height={36}
                 className="h-auto filter brightness-0 invert"
@@ -156,7 +159,11 @@ export default function ManagementPage() {
               onClick={() => handleZoneClick(zone.id)}
             >
               <div className="absolute inset-0 bg-black/50 z-10"></div>
-              <img src={zone.image || "/placeholder.svg"} alt={zone.name} className="w-full h-40 object-cover" />
+              <img 
+                src={isHuntUser ? "/images/hunt1.jpg" : (zone.image || "/placeholder.svg")} 
+                alt={zone.name} 
+                className="w-full h-40 object-cover" 
+              />
               <div className="absolute inset-0 z-20 p-4 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
                   <h3 className="text-xl font-semibold">{zone.name}</h3>

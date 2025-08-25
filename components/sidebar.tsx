@@ -46,14 +46,14 @@ export function Sidebar() {
       ),
       label: "Performance",
       isActive: pathname === "/performance",
-      disabled: isHuntUser,
+      disabled: false,
     },
     {
       href: "/management",
       icon: Briefcase,
       label: "Management",
       isActive: pathname === "/management",
-      disabled: isHuntUser,
+      disabled: false,
     },
     {
       href: "/users",

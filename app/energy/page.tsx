@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Cloud, Download } from "lucide-react"
 import { LineChart } from "@/components/line-chart"
+import { getLogoForUser } from "@/lib/logo-utils"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
 import { useUser } from "@/contexts/user-context"
 
@@ -62,6 +63,7 @@ export default function EnergyDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [tsdbConfig, setTsdbConfig] = useState<TSDBConfig | null>(null)
   const [currentUnit, setCurrentUnit] = useState("A")
+  const logo = getLogoForUser()
   const currentDate = getCurrentFormattedDate()
 
   const timeRanges = {
@@ -72,6 +74,13 @@ export default function EnergyDashboard() {
   }
 
   const aggregationTypes = ["max", "min", "avg", "sum"]
+
+// Project	Serial Number	Site 	Energy Meter 	AC Controller	Present Sensor 	Ambient Sensor 	Supply Air Sensor
+// ADEST-000001	ADEST-000001-0001	The Hunt	25120		25133	25114	25138
+// ADEST-000001	ADEST-000001-0002	The Hunt	25121	25151	25134	25115	25139
+// ADEST-000001	ADEST-000001-0003	The Hunt	25122	25154	25135	25116	25140
+// ADEST-000001	ADEST-000001-0004	The Hunt	25123	25153	25136	25117	25141
+// ADEST-000001	ADEST-000001-0005	The Hunt	25124	25152	25137	25118	25142
 
   // All available sensors with their display names and user ownership
   const allSensors = {
@@ -89,7 +98,7 @@ export default function EnergyDashboard() {
     "vertriqe_25123_cctp": { name: "The Hunt Energy Meter 25123 (Cumulative)", owner: "The Hunt" },
     "vertriqe_25123_cttp": { name: "The Hunt Energy Meter 25123 (Instant)", owner: "The Hunt" },
     "vertriqe_25124_cctp": { name: "The Hunt Energy Meter 25124 (Cumulative)", owner: "The Hunt" },
-    "vertriqe_25124_cttp": { name: "The Hunt Energy Meter 25124 (Instant)", owner: "The Hunt" }
+    "vertriqe_25124_cttp": { name: "The Hunt Energy Meter 25124 (Instant)", owner: "The Hunt" },
   }
 
   // Filter sensors based on current user
@@ -156,7 +165,8 @@ export default function EnergyDashboard() {
           start_timestamp: startTimestamp,
           end_timestamp: now,
           downsampling: timeRange.downsampling,
-          aggregation: activeAggregation
+          aggregation: activeAggregation,
+
         }
       }
 
@@ -179,6 +189,10 @@ export default function EnergyDashboard() {
         // Get configuration for the selected key
         const keyConfig = getKeyConfig(selectedOffice)
         setCurrentUnit(keyConfig.unit)
+        //check if result.data.data exists
+        if (!result.data.data) {
+          throw new Error("No data found")
+        }
 
         // Convert the data to chart format
         const labels = result.data.data.map(point => {
@@ -278,8 +292,8 @@ export default function EnergyDashboard() {
         <div className="flex justify-between items-start mb-8">
           <div>
             <Image
-              src="/images/vertriqe-logo.png"
-              alt="VERTRIQE Logo"
+              src={logo.src}
+              alt={logo.alt}
               width={120}
               height={36}
               className="h-auto filter brightness-0 invert"

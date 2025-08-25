@@ -8,6 +8,7 @@ import { LineChart } from "@/components/line-chart"
 import { PieChart } from "@/components/pie-chart"
 import { useUser } from "@/contexts/user-context"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
+import { getLogoForUser } from "@/lib/logo-utils"
 import Image from "next/image"
 
 interface PerformanceData {
@@ -20,9 +21,10 @@ interface PerformanceData {
     energySaved: string
     co2Reduced: string
     estimateSaving: string
-    averageTemperature: string
-    averageHumidity: string
+    averageIndoorTemperature: string
+    averageIndoorHumidity: string
     averageOutdoorTemperature: string
+    averageOutdoorHumidity: string
   }
   usageData: {
     labels: string[]
@@ -46,22 +48,28 @@ export default function PerformancePage() {
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { user } = useUser()
+  const logo = getLogoForUser(user?.email)
   const currentDate = getCurrentFormattedDate()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("/api/performance")
-        const data = await response.json()
-        setPerformanceData(data)
-        setIsLoading(false)
-      } catch (error) {
-        console.error("Error fetching performance data:", error)
-        setIsLoading(false)
-      }
+  const fetchData = async (period: string = "week") => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/performance?period=${period}`)
+      const data = await response.json()
+      setPerformanceData(data)
+      setIsLoading(false)
+    } catch (error) {
+      console.error("Error fetching performance data:", error)
+      setIsLoading(false)
     }
+  }
 
-    fetchData()
+  useEffect(() => {
+    fetchData(activeTab)
+  }, [activeTab])
+
+  useEffect(() => {
+    fetchData("week") // Initial load with week
   }, [])
 
   if (isLoading || !performanceData) {
@@ -79,8 +87,8 @@ export default function PerformancePage() {
           <div>
             <div className="flex items-center gap-4 mb-2">
               <Image
-                src="/images/vertriqe-logo.png"
-                alt="VERTRIQE Logo"
+                src={logo.src}
+                alt={logo.alt}
                 width={120}
                 height={36}
                 className="h-auto filter brightness-0 invert"
@@ -100,7 +108,7 @@ export default function PerformancePage() {
           <div className="lg:col-span-3 p-4 rounded-lg bg-slate-800">
             {/* Time Period Tabs */}
             <div className="mb-6">
-              <Tabs defaultValue="week" className="w-full" onValueChange={setActiveTab}>
+              <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
                 <TabsList className="bg-slate-700 w-auto">
                   <TabsTrigger value="today" className="data-[state=active]:bg-slate-600">
                     Today
@@ -214,34 +222,51 @@ export default function PerformancePage() {
           </div>
 
           <div className="space-y-6">
-            {/* Temperature Cards */}
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                  <span className="text-sm">Average Temperature</span>
-                </div>
-                <div className="text-3xl font-bold">{performanceData.metrics.averageTemperature}</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                  <span className="text-sm">Average Humidity</span>
-                </div>
-                <div className="text-3xl font-bold">{performanceData.metrics.averageHumidity}</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                  <span className="text-sm">Average Outdoor Temperature</span>
-                </div>
-                <div className="text-3xl font-bold">{performanceData.metrics.averageOutdoorTemperature}</div>
-              </CardContent>
-            </Card>
+            {/* Indoor Temperature & Humidity Cards */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-slate-200">Indoor Conditions</h3>
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                    <span className="text-sm">Indoor Temperature</span>
+                  </div>
+                  <div className="text-3xl font-bold">{performanceData.metrics.averageIndoorTemperature}</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                    <span className="text-sm">Indoor Humidity</span>
+                  </div>
+                  <div className="text-3xl font-bold">{performanceData.metrics.averageIndoorHumidity}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Outdoor Temperature & Humidity Cards */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-slate-200">Outdoor Conditions</h3>
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-orange-500 rounded-sm"></div>
+                    <span className="text-sm">Outdoor Temperature</span>
+                  </div>
+                  <div className="text-3xl font-bold">{performanceData.metrics.averageOutdoorTemperature}</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-orange-500 rounded-sm"></div>
+                    <span className="text-sm">Outdoor Humidity</span>
+                  </div>
+                  <div className="text-3xl font-bold">{performanceData.metrics.averageOutdoorHumidity}</div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* AC Usage Pie Chart */}
             <div className="p-4 rounded-lg bg-slate-800">
@@ -250,15 +275,14 @@ export default function PerformancePage() {
                   labels: ["AC On", "AC Off", "OT On"],
                   datasets: [
                     {
-                      data: [performanceData.acUsage.acOn, performanceData.acUsage.acOff, performanceData.acUsage.otOn],
+                      data: [performanceData.acUsage.acOff,performanceData.acUsage.acOn], //,  performanceData.acUsage.otOn
                       backgroundColor: ["#3b82f6", "#374151", "#ef4444"],
                     },
                   ],
                 }}
                 labels={[
-                  { text: "OT On", value: `${performanceData.acUsage.otOn}%`, position: "top-right" },
-                  { text: "AC On", value: `${performanceData.acUsage.acOn}%`, position: "top-left" },
-                  { text: "AC Off", value: `${performanceData.acUsage.acOff}%`, position: "bottom" },
+                  { text: "AC Off", value: `${performanceData.acUsage.acOff}%`, position: "top-right" },
+                  { text: "AC On", value: `${performanceData.acUsage.acOn}%`, position: "top-left" }
                 ]}
               />
             </div>

@@ -7,6 +7,7 @@ import { Cloud, Sun, ExternalLink, Info } from "lucide-react"
 import { LineChart } from "@/components/line-chart"
 import { useUser } from "@/contexts/user-context"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
+import { getLogoForUser } from "@/lib/logo-utils"
 import Image from "next/image"
 import type { RssItem } from "@/lib/rss-parser"
 
@@ -58,6 +59,7 @@ export default function Dashboard() {
   const { user } = useUser()
   const currentDate = getCurrentFormattedDate()
   const isHuntUser = user?.name === "The Hunt"
+  const logo = getLogoForUser(user?.email)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -132,8 +134,8 @@ export default function Dashboard() {
         <div className="flex justify-between items-start mb-8">
           <div className="flex items-center gap-4">
             <Image
-              src="/images/vertriqe-logo.png"
-              alt="VERTRIQE Logo"
+              src={logo.src}
+              alt={logo.alt}
               width={120}
               height={36}
               className="h-auto filter brightness-0 invert"
