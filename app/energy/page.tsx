@@ -89,16 +89,16 @@ export default function EnergyDashboard() {
     "vertriqe_24836_temp2": { name: "Hai Sang Cold Room Temperature", owner: "Hai Sang" },
     
     // The Hunt's sensors
-    "vertriqe_25120_cctp": { name: "The Hunt Energy Meter 25120 (Cumulative)", owner: "The Hunt" },
-    "vertriqe_25120_cttp": { name: "The Hunt Energy Meter 25120 (Instant)", owner: "The Hunt" },
-    "vertriqe_25121_cctp": { name: "The Hunt Energy Meter 25121 (Cumulative)", owner: "The Hunt" },
-    "vertriqe_25121_cttp": { name: "The Hunt Energy Meter 25121 (Instant)", owner: "The Hunt" },
-    "vertriqe_25122_cctp": { name: "The Hunt Energy Meter 25122 (Cumulative)", owner: "The Hunt" },
-    "vertriqe_25122_cttp": { name: "The Hunt Energy Meter 25122 (Instant)", owner: "The Hunt" },
-    "vertriqe_25123_cctp": { name: "The Hunt Energy Meter 25123 (Cumulative)", owner: "The Hunt" },
-    "vertriqe_25123_cttp": { name: "The Hunt Energy Meter 25123 (Instant)", owner: "The Hunt" },
-    "vertriqe_25124_cctp": { name: "The Hunt Energy Meter 25124 (Cumulative)", owner: "The Hunt" },
-    "vertriqe_25124_cttp": { name: "The Hunt Energy Meter 25124 (Instant)", owner: "The Hunt" },
+    "vertriqe_25120_cctp": { name: "Area 1 - Total Energy (25120)", owner: "The Hunt" },
+    "vertriqe_25120_cttp": { name: "Area 1 - Instant Energy (25120)", owner: "The Hunt" },
+    "vertriqe_25121_cctp": { name: "Area 2 - Total Energy (25121)", owner: "The Hunt" },
+    "vertriqe_25121_cttp": { name: "Area 2 - Instant Energy (25121)", owner: "The Hunt" },
+    "vertriqe_25122_cctp": { name: "Area 3 - Total Energy (25122)", owner: "The Hunt" },
+    "vertriqe_25122_cttp": { name: "Area 3 - Instant Energy (25122)", owner: "The Hunt" },
+    "vertriqe_25123_cctp": { name: "Area 4 - Total Energy (25123)", owner: "The Hunt" },
+    "vertriqe_25123_cttp": { name: "Area 4 - Instant Energy (25123)", owner: "The Hunt" },
+    "vertriqe_25124_cctp": { name: "Area 5 - Total Energy (25124)", owner: "The Hunt" },
+    "vertriqe_25124_cttp": { name: "Area 5 - Instant Energy (25124)", owner: "The Hunt" },
   }
 
   // Filter sensors based on current user
