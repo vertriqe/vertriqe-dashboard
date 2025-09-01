@@ -2,8 +2,8 @@ import { NextResponse } from "next/server"
 import { redis } from "@/lib/redis"
 import { parseRssFeed, type RssFeed, type RssItem } from "@/lib/rss-parser"
 
-const ESG_NEWS_CACHE_KEY = "vertrique:esg_news"
-const CACHE_TTL = 10 * 60 // 10 minutes in seconds
+const ESG_NEWS_CACHE_KEY = "vertriqe:esg_news"
+const CACHE_TTL = 60 * 60 * 24 // 1 day in seconds
 const RSS_FEED_URL = "https://esgnews.com/feed/"
 
 async function fetchAndCacheEsgNews(): Promise<RssItem[]> {
@@ -18,7 +18,7 @@ async function fetchAndCacheEsgNews(): Promise<RssItem[]> {
       }
 
       // Cache the feed data in Redis with expiration
-      await redis.set(ESG_NEWS_CACHE_KEY, JSON.stringify(feedData), { ex: CACHE_TTL })
+      await redis.set(ESG_NEWS_CACHE_KEY, JSON.stringify(feedData), CACHE_TTL)
       console.log(`Cached ${items.length} ESG news items in Redis`)
     }
 
