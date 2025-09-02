@@ -26,6 +26,7 @@ interface ManagementData {
     humidity: string
     image: string
     savingModeEnabled: boolean
+    lastUpdate: number
   }[]
 }
 
@@ -139,7 +140,7 @@ export default function ManagementPage() {
           </div>
         </div>
 
-        <div className="flex justify-end mb-6">
+        {/* <div className="flex justify-end mb-6">
           <Card className="bg-slate-800 border-slate-700 w-48">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -149,14 +150,13 @@ export default function ManagementPage() {
               <div className="text-3xl font-bold">{managementData.estimatedSaving}</div>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {managementData.zones.map((zone) => (
             <div
               key={zone.id}
-              className="relative overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => handleZoneClick(zone.id)}
+              className="relative overflow-hidden rounded-lg"
             >
               <div className="absolute inset-0 bg-black/50 z-10"></div>
               <img 
@@ -167,18 +167,31 @@ export default function ManagementPage() {
               <div className="absolute inset-0 z-20 p-4 flex flex-col justify-between">
                 <div className="flex justify-between items-start">
                   <h3 className="text-xl font-semibold">{zone.name}</h3>
-                  <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 bg-slate-700/50">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="rounded-full h-8 w-8 bg-slate-700/50 hover:bg-slate-600/50 cursor-pointer" 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleZoneClick(zone.id)
+                    }}
+                  >
                     <HelpCircle className="h-5 w-5" />
                   </Button>
                 </div>
                 <div className="flex justify-between items-end">
-                  <div className="flex items-center">
-                    <Thermometer className="h-5 w-5 mr-1" />
-                    <span className="text-lg">{zone.temperature}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center">
+                      <Thermometer className="h-5 w-5 mr-1" />
+                      <span className="text-lg">{zone.temperature}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Droplets className="h-5 w-5 mr-1" />
+                      <span className="text-lg">{zone.humidity}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <Droplets className="h-5 w-5 mr-1" />
-                    <span className="text-lg">{zone.humidity}</span>
+                  <div className="text-xs text-slate-300">
+                    Last updated: {new Date(zone.lastUpdate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                   {zone.savingModeEnabled && (
                     <div className="absolute top-4 right-12 bg-green-500/80 rounded-full p-1">

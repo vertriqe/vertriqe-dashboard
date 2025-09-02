@@ -87,7 +87,7 @@ function getKeyConfig(key: string, tsdbConfig: TSDBConfig | null) {
   return { multiplier: 1, unit: "", offset: 0 }
 }
 
-async function fetchSensorData(sensorKey: string): Promise<number | null> {
+async function fetchSensorData(sensorKey: string): Promise<{ value: number; timestamp: number } | null> {
   try {
     const now = Math.floor(Date.now() / 1000)
     const startTimestamp = now - 3600 // Last hour
@@ -117,7 +117,7 @@ async function fetchSensorData(sensorKey: string): Promise<number | null> {
     if (result.success && result.data.success && result.data.data.length > 0) {
       // Get the latest data point
       const latestPoint = result.data.data[result.data.data.length - 1]
-      return latestPoint.value
+      return { value: latestPoint.value, timestamp: latestPoint.timestamp }
     }
 
     return null
@@ -230,7 +230,7 @@ export async function GET() {
       zoneSensors.map(async (zone) => {
         try {
           // Fetch temperature and humidity data
-          const [tempValue, humValue] = await Promise.all([
+          const [tempData, humData] = await Promise.all([
             fetchSensorData(zone.tempSensor),
             fetchSensorData(zone.humSensor)
           ])
@@ -239,13 +239,23 @@ export async function GET() {
           const tempConfig = getKeyConfig(zone.tempSensor, tsdbConfig)
           const humConfig = getKeyConfig(zone.humSensor, tsdbConfig)
           
-          const processedTemp = tempValue !== null 
-            ? (tempValue * tempConfig.multiplier + tempConfig.offset)
+          const processedTemp = tempData !== null 
+            ? (tempData.value * tempConfig.multiplier + tempConfig.offset)
             : null
             
-          const processedHum = humValue !== null 
-            ? (humValue * humConfig.multiplier + humConfig.offset)
+          const processedHum = humData !== null 
+            ? (humData.value * humConfig.multiplier + humConfig.offset)
             : null
+
+          // Use the more recent timestamp between temp and hum data
+          let lastUpdateTimestamp = 0
+          if (tempData && humData) {
+            lastUpdateTimestamp = Math.max(tempData.timestamp, humData.timestamp)
+          } else if (tempData) {
+            lastUpdateTimestamp = tempData.timestamp
+          } else if (humData) {
+            lastUpdateTimestamp = humData.timestamp
+          }
 
           return {
             id: zone.id,
@@ -254,6 +264,7 @@ export async function GET() {
             humidity: processedHum !== null ? `${processedHum.toFixed(0)}%` : "N/A",
             image: "/placeholder.svg?height=200&width=400",
             savingModeEnabled: zone.savingModeEnabled,
+            lastUpdate: lastUpdateTimestamp * 1000, // Convert to milliseconds for JavaScript Date
           }
         } catch (error) {
           console.error(`Error processing zone ${zone.id}:`, error)
@@ -264,6 +275,7 @@ export async function GET() {
             humidity: "N/A", 
             image: "/placeholder.svg?height=200&width=400",
             savingModeEnabled: zone.savingModeEnabled,
+            lastUpdate: Date.now(), // Use current time as fallback
           }
         }
       })
@@ -304,6 +316,7 @@ export async function GET() {
           humidity: "68%",
           image: "/placeholder.svg?height=200&width=400",
           savingModeEnabled: true,
+          lastUpdate: Date.now() - 300000, // 5 minutes ago
         },
         {
           id: 2,
@@ -312,6 +325,7 @@ export async function GET() {
           humidity: "62%",
           image: "/placeholder.svg?height=200&width=400",
           savingModeEnabled: false,
+          lastUpdate: Date.now() - 180000, // 3 minutes ago
         },
         {
           id: 3,
@@ -320,6 +334,7 @@ export async function GET() {
           humidity: "58%",
           image: "/placeholder.svg?height=200&width=400",
           savingModeEnabled: true,
+          lastUpdate: Date.now() - 600000, // 10 minutes ago
         },
         {
           id: 4,
@@ -328,6 +343,7 @@ export async function GET() {
           humidity: "72%",
           image: "/placeholder.svg?height=200&width=400",
           savingModeEnabled: false,
+          lastUpdate: Date.now() - 120000, // 2 minutes ago
         },
         {
           id: 5,
@@ -336,6 +352,7 @@ export async function GET() {
           humidity: "65%",
           image: "/placeholder.svg?height=200&width=400",
           savingModeEnabled: true,
+          lastUpdate: Date.now() - 240000, // 4 minutes ago
         },
       ],
     }

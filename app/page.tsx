@@ -172,7 +172,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-medium">{dashboardData.weatherLocation.name}</h3>
+                  <h3 className="font-medium">{isHuntUser ? "Kwun Tong" : dashboardData.weatherLocation.name}</h3>
                   <p className="text-sm text-slate-300 mt-1">{dashboardData.weatherLocation.description}</p>
                   <div className="mt-2 text-sm text-slate-400">
                     {dashboardData.weatherLocation.condition} | {dashboardData.weatherLocation.temperature}
@@ -202,7 +202,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-blue-500"></div>
-                    <span className="text-sm">Actual Usage</span>
+                    <span className="text-sm">Actual Usage (kWh)</span>
                   </div>
                   {!isHuntUser && (
                     <>
@@ -224,7 +224,7 @@ export default function Dashboard() {
                     datasets: isHuntUser 
                       ? [
                           {
-                            label: "Actual Usage",
+                            label: "Actual Usage (kWh)",
                             data: dashboardData.energyUsage.actualUsage,
                             borderColor: "#3b82f6",
                             backgroundColor: "#3b82f6",
@@ -232,7 +232,7 @@ export default function Dashboard() {
                         ]
                       : [
                           {
-                            label: "Actual Usage",
+                            label: "Actual Usage (kWh)",
                             data: dashboardData.energyUsage.actualUsage,
                             borderColor: "#3b82f6",
                             backgroundColor: "#3b82f6",

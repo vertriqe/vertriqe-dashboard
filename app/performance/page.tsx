@@ -160,7 +160,7 @@ export default function PerformancePage() {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-blue-500"></div>
-                    <span className="text-sm">Normal Usage</span>
+                    <span className="text-sm">Normal Usage (kWh)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-red-500"></div>
@@ -177,7 +177,7 @@ export default function PerformancePage() {
                     labels: performanceData.usageData.labels,
                     datasets: [
                       {
-                        label: "Normal Usage",
+                        label: "Normal Usage (kWh)",
                         data: performanceData.usageData.normalUsage,
                         backgroundColor: "#3b82f6",
                       },
@@ -272,17 +272,17 @@ export default function PerformancePage() {
             <div className="p-4 rounded-lg bg-slate-800">
               <PieChart
                 data={{
-                  labels: ["AC On", "AC Off", "OT On"],
+                  labels: ["AC On", "AC Off"],//, "OT On"
                   datasets: [
                     {
-                      data: [performanceData.acUsage.acOff,performanceData.acUsage.acOn], //,  performanceData.acUsage.otOn
-                      backgroundColor: ["#3b82f6", "#374151", "#ef4444"],
+                      data: [performanceData.acUsage.acOn, performanceData.acUsage.acOff], //,  performanceData.acUsage.otOn
+                      backgroundColor: ["#3b82f6", "transparent"],//, "#ef4444"
                     },
                   ],
                 }}
                 labels={[
-                  { text: "AC Off", value: `${performanceData.acUsage.acOff}%`, position: "top-right" },
-                  { text: "AC On", value: `${performanceData.acUsage.acOn}%`, position: "top-left" }
+                  { text: "AC On", value: `${performanceData.acUsage.acOn}%`, position: "top-right" },
+                  { text: "AC Off", value: `${performanceData.acUsage.acOff}%`, position: "top-left" }
                 ]}
               />
             </div>

@@ -493,10 +493,19 @@ export async function GET(request: Request) {
       }
     }
 
+    // Calculate differential usage (value[n] - value[n-1])
+    const differentialUsage = finalEnergyData.map((value, index) => {
+      if (index === 0) {
+        return 0 // First value has no previous value to subtract from
+      }
+      return Math.max(0, value - finalEnergyData[index - 1]) // Ensure no negative values
+    })
+
     // Calculate total energy usage for the period
     const totalUsage = finalEnergyData.reduce((sum, value) => sum + value, 0)
 
     console.log(`${period.charAt(0).toUpperCase() + period.slice(1)} energy data:`, finalEnergyData)
+    console.log(`${period.charAt(0).toUpperCase() + period.slice(1)} differential usage:`, differentialUsage)
     console.log(`Total ${period} usage:`, totalUsage)
 
     const performanceData = {
@@ -517,7 +526,7 @@ export async function GET(request: Request) {
       },
       usageData: {
         labels: labels,
-        normalUsage: finalEnergyData, // Real data from GTSDB
+        normalUsage: differentialUsage, // Differential usage (value[n] - value[n-1])
         otUsage: Array(finalEnergyData.length).fill(0), // Set to 0 as no OT usage
         baseline: Array(finalEnergyData.length).fill(0), // Set to 0 as requested
       },
@@ -558,7 +567,7 @@ export async function GET(request: Request) {
       },
       usageData: {
         labels: ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"],
-        normalUsage: [60, 80, 60, 70, 110, 110, 0], // Dummy fallback data
+        normalUsage: [0, 20, -20, 10, 40, 0, -110], // Differential dummy data (value[n] - value[n-1])
         otUsage: Array(7).fill(0), // Set to 0 as no OT usage
         baseline: Array(7).fill(0), // Set to 0 as requested
       },

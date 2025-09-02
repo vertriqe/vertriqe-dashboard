@@ -11,6 +11,7 @@ import { LineChart } from "@/components/line-chart"
 import { getLogoForUser } from "@/lib/logo-utils"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
 import { useUser } from "@/contexts/user-context"
+// Weather data will be fetched via API instead of direct import
 
 interface TSDBDataPoint {
   key: string
@@ -63,6 +64,7 @@ export default function EnergyDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [tsdbConfig, setTsdbConfig] = useState<TSDBConfig | null>(null)
   const [currentUnit, setCurrentUnit] = useState("A")
+  const [weatherData, setWeatherData] = useState<{ condition: string; temperature: string } | null>(null)
   const logo = getLogoForUser()
   const currentDate = getCurrentFormattedDate()
 
@@ -146,6 +148,34 @@ export default function EnergyDashboard() {
       console.log("TSDB Config loaded:", config)
     } catch (err) {
       console.error("Error fetching TSDB config:", err)
+    }
+  }
+
+  // Fetch weather data via API
+  const fetchWeatherInfo = async () => {
+    try {
+      const response = await fetch("/api/dashboard")
+      const dashboardData = await response.json()
+      
+      if (dashboardData && dashboardData.forecast) {
+        setWeatherData({
+          condition: dashboardData.forecast.condition,
+          temperature: dashboardData.forecast.range
+        })
+      } else {
+        // Fallback to default values
+        setWeatherData({
+          condition: "Cloudy",
+          temperature: "28/31°C"
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching weather data:", error)
+      // Fallback to default values
+      setWeatherData({
+        condition: "Cloudy",
+        temperature: "28/31°C"
+      })
     }
   }
 
@@ -247,9 +277,10 @@ export default function EnergyDashboard() {
     }
   }, [user, availableSensors, selectedOffice])
 
-  // Fetch TSDB config on component mount
+  // Fetch TSDB config and weather data on component mount
   useEffect(() => {
     fetchTsdbConfig()
+    fetchWeatherInfo()
   }, [])
 
   // Fetch energy data when dependencies change
@@ -303,8 +334,8 @@ export default function EnergyDashboard() {
             <div className="text-lg">{currentDate}</div>
             <div className="flex items-center gap-2 text-slate-300">
               <Cloud className="h-4 w-4" />
-              <span>Cloudy</span>
-              <span>28/31°C</span>
+              <span>{weatherData?.condition || "Loading..."}</span>
+              <span>{weatherData?.temperature || "Loading..."}</span>
             </div>
           </div>
         </div>

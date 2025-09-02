@@ -95,7 +95,7 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
     // Check Redis cache first (30 minutes TTL)
     const cacheKey = "hunt_sensor_data"
     const cachedData = await redis.get(cacheKey)
-    if (cachedData) {
+    if (false) {
       console.log("✅ Using cached Hunt sensor data")
       return JSON.parse(cachedData as string)
     }
@@ -163,14 +163,26 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
         // Apply multiplier and offset from TSDB config
         const processedValue = point.value * keyConfig.multiplier + keyConfig.offset
         const existingValue = timeValueMap.get(point.timestamp) || 0
-        timeValueMap.set(point.timestamp, existingValue + processedValue)
+        const dateOfTs = new Date(point.timestamp * 1000).toISOString().split("T")[0]
+        const tsOfDate = new Date(dateOfTs).getTime() / 1000
+        timeValueMap.set(tsOfDate, existingValue + processedValue)
       })
     })
     
     // Convert back to array format and sort by timestamp
-    const aggregatedData = Array.from(timeValueMap.entries())
+    let aggregatedData = Array.from(timeValueMap.entries())
       .map(([timestamp, value]) => ({ timestamp, value }))
       .sort((a, b) => a.timestamp - b.timestamp)
+
+    // deduplicate data points that with the same date, for the same date, use the max value
+    // for (let i = aggregatedData.length - 1; i > 0; i--) {
+    //   if (aggregatedData[i].timestamp === aggregatedData[i - 1].timestamp) {
+    //     aggregatedData[i - 1].value = Math.max(aggregatedData[i - 1].value, aggregatedData[i].value)
+    //     aggregatedData.splice(i, 1)
+    //     console.log(`Deduplicated data point at timestamp ${aggregatedData[i].timestamp}`) // Log deduplication
+    //   }
+    // }
+    //console.log(aggregatedData)
 
     // Cache the processed data for 30 minutes (1800 seconds)
     await redis.set(cacheKey, JSON.stringify(aggregatedData), 1800)
@@ -184,7 +196,7 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
   }
 }
 
-function calculateEnergyMetrics(sensorData: HuntSensorData[], config: EnergyConfig) {
+function calculateEnergyMetrics(sensorData: HuntSensorData[], _config: EnergyConfig) {
   if (sensorData.length === 0) {
     return {
       actualUsage: [],

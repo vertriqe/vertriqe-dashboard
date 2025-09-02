@@ -49,6 +49,14 @@ export function BarChart({ data, className, baseline }: BarChartProps) {
             },
             ticks: {
               color: "rgba(255, 255, 255, 0.7)",
+              callback: function(value: any) {
+                return value + ' kWh'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Energy Usage (kWh)',
+              color: "rgba(255, 255, 255, 0.7)",
             },
             stacked: true,
           },
