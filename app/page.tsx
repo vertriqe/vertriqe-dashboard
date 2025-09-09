@@ -135,12 +135,11 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-start mb-8">
           <div className="flex items-center gap-4">
-            <Image
+            <img
               src={logo.src}
               alt={logo.alt}
-              width={120}
-              height={36}
               className="h-auto filter brightness-0 invert"
+              style={{ maxHeight: 50, maxWidth: 200 }}
             />
             <h1 className="text-2xl font-semibold">Morning {user?.name || "User"}</h1>
           </div>

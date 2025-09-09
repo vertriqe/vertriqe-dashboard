@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Allow access to login page, API auth routes, and energy dashboard without authentication
-  if (pathname === "/login" || pathname.startsWith("/api/auth") || pathname === "/energy" || pathname.startsWith("/api/tsdb")) {
+  if (pathname === "/login" || pathname.startsWith("/api/auth") || pathname === "/energy" || pathname.startsWith("/api/tsdb") || pathname.startsWith("/api/weave-sensors")) {
     return NextResponse.next()
   }
 

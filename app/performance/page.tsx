@@ -86,11 +86,12 @@ export default function PerformancePage() {
         <div className="flex justify-between items-start mb-4">
           <div>
             <div className="flex items-center gap-4 mb-2">
-              <Image
-                src={logo.src}
-                alt={logo.alt}
-                className="h-auto filter brightness-0 invert max-h-200 max-h-50"
-              />
+            <img
+              src={logo.src}
+              alt={logo.alt}
+              className="h-auto filter brightness-0 invert"
+              style={{ maxHeight: 50, maxWidth: 200 }}
+            />
               <h1 className="text-2xl font-semibold">Hello {user?.name || "User"}</h1>
             </div>
             <h2 className="text-3xl font-bold mt-2">Performance Overview</h2>

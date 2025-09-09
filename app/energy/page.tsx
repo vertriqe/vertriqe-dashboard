@@ -65,7 +65,7 @@ export default function EnergyDashboard() {
   const [tsdbConfig, setTsdbConfig] = useState<TSDBConfig | null>(null)
   const [currentUnit, setCurrentUnit] = useState("A")
   const [weatherData, setWeatherData] = useState<{ condition: string; temperature: string } | null>(null)
-  const logo = getLogoForUser()
+  const logo = getLogoForUser(user?.email)
   const currentDate = getCurrentFormattedDate()
 
   const timeRanges = {
@@ -106,6 +106,9 @@ export default function EnergyDashboard() {
     "vertriqe_25245_cttp": { name: "AC 1 - Instant Energy", owner: "Weave Studio" },
     "vertriqe_25247_cttp": { name: "AC 2 - Instant Energy", owner: "Weave Studio" },
     "vertriqe_25248_cttp": { name: "Combined - Instant Energy", owner: "Weave Studio" },
+    "weave_ac1_accumulated": { name: "AC 1 - Accumulated Energy", owner: "Weave Studio" },
+    "weave_ac2_accumulated": { name: "AC 2 - Accumulated Energy", owner: "Weave Studio" },
+    "weave_combined_accumulated": { name: "Combined - Accumulated Energy", owner: "Weave Studio" },
   }
 
   // Filter sensors based on current user
@@ -193,9 +196,23 @@ export default function EnergyDashboard() {
       const timeRange = timeRanges[activeTab as keyof typeof timeRanges]
       const startTimestamp = now - timeRange.seconds
 
+      // Check if this is a derived/accumulated sensor
+      const isAccumulated = selectedOffice.includes('_accumulated')
+      let actualSensorKey = selectedOffice
+
+      // Map accumulated sensors to their actual sensor keys
+      if (isAccumulated) {
+        const keyMapping: Record<string, string> = {
+          'weave_ac1_accumulated': 'vertriqe_25245_cttp',
+          'weave_ac2_accumulated': 'vertriqe_25247_cttp', 
+          'weave_combined_accumulated': 'vertriqe_25248_cttp'
+        }
+        actualSensorKey = keyMapping[selectedOffice] || selectedOffice
+      }
+
       const payload = {
         operation: "read",
-        key: selectedOffice, // Use the selected sensor key
+        key: actualSensorKey, // Use the actual sensor key
         Read: {
           start_timestamp: startTimestamp,
           end_timestamp: now,
@@ -222,8 +239,9 @@ export default function EnergyDashboard() {
 
       if (result.success && result.data.success) {
         // Get configuration for the selected key
-        const keyConfig = getKeyConfig(selectedOffice)
-        setCurrentUnit(keyConfig.unit)
+        const keyConfig = getKeyConfig(actualSensorKey)
+        const displayUnit = isAccumulated ? "kWh" : keyConfig.unit
+        setCurrentUnit(displayUnit)
         //check if result.data.data exists
         if (!result.data.data) {
           throw new Error("No data found")
@@ -241,10 +259,19 @@ export default function EnergyDashboard() {
           }
         })
 
-        // Apply TSDB configuration: multiply by multiplier and add offset
-        const values = result.data.data.map(point => {
+        // Process values - apply TSDB configuration and accumulation if needed
+        const values = result.data.data.map((point, index) => {
           let processedValue = point.value * keyConfig.multiplier + keyConfig.offset
-          // Ensure we have reasonable values for display
+          
+          // If this is an accumulated sensor, calculate cumulative sum
+          if (isAccumulated) {
+            let accumulatedValue = 0
+            for (let i = 0; i <= index; i++) {
+              accumulatedValue += result.data.data[i].value * keyConfig.multiplier + keyConfig.offset
+            }
+            return accumulatedValue
+          }
+          
           return processedValue
         })
 
@@ -253,7 +280,7 @@ export default function EnergyDashboard() {
         setChartData({
           labels,
           datasets: [{
-            label: `${sensorName} (${keyConfig.unit})`,
+            label: `${sensorName} (${displayUnit})`,
             data: values,
             borderColor: "#22d3ee", // Cyan color like in the reference
             backgroundColor: "rgba(34, 211, 238, 0.1)",
@@ -327,12 +354,11 @@ export default function EnergyDashboard() {
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
           <div>
-            <Image
+            <img
               src={logo.src}
               alt={logo.alt}
-              width={120}
-              height={36}
               className="h-auto filter brightness-0 invert"
+              style={{ maxHeight: 50, maxWidth: 200 }}
             />
           </div>
           <div className="text-right">
@@ -449,6 +475,7 @@ export default function EnergyDashboard() {
             )}
           </CardContent>
         </Card>
+
       </div>
     </div>
   )
