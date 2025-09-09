@@ -20,6 +20,11 @@ interface HuntSensorData {
   value: number
 }
 
+interface WeaveSensorData {
+  timestamp: number
+  value: number
+}
+
 async function getEnergyConfig(): Promise<EnergyConfig> {
   try {
     const configData = await redis.get("energy_config")
@@ -196,7 +201,98 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
   }
 }
 
-function calculateEnergyMetrics(sensorData: HuntSensorData[], _config: EnergyConfig) {
+async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
+  try {
+    // Check Redis cache first (30 minutes TTL)
+    const cacheKey = "weave_sensor_data"
+    const cachedData = await redis.get(cacheKey)
+    if (false) {
+      console.log("✅ Using cached Weave Studio sensor data")
+      return JSON.parse(cachedData as string)
+    }
+
+    console.log("🔧 Fetching fresh Weave Studio sensor data...")
+    
+    // Get TSDB configuration for multipliers and units
+    const tsdbConfig = await fetchTsdbConfig()
+    
+    // Weave Studio's instant energy sensors
+    const weaveSensors = [
+      "vertriqe_25245_cttp",  // AC 1 - Instant Energy
+      "vertriqe_25247_cttp",  // AC 2 - Instant Energy
+      "vertriqe_25248_cttp"   // Combined - Instant Energy
+    ]
+    
+    const now = Math.floor(Date.now() / 1000)
+    const thirtyDaysAgo = now - (30 * 24 * 3600) // 30 days in seconds
+    
+    // Fetch data for each sensor
+    const sensorPromises = weaveSensors.map(async (sensorKey) => {
+      const payload = {
+        operation: "read",
+        key: sensorKey,
+        Read: {
+          start_timestamp: thirtyDaysAgo,
+          end_timestamp: now,
+          downsampling: 86400, // Daily aggregation
+          aggregation: "sum"    // Sum for energy consumption
+        }
+      }
+
+      const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        console.warn(`Failed to fetch data for Weave Studio sensor ${sensorKey}`)
+        return []
+      }
+
+      const result = await response.json()
+      if (result.success && result.data.success && result.data.data.length > 0) {
+        return result.data.data.map((point: any) => {
+          const config = getKeyConfig(sensorKey, tsdbConfig)
+          return {
+            timestamp: point.timestamp,
+            value: point.value * config.multiplier + config.offset,
+            key: sensorKey
+          }
+        })
+      }
+      return []
+    })
+
+    const allSensorResults = await Promise.all(sensorPromises)
+    
+    // Combine all sensor data and aggregate by timestamp
+    const timeValueMap = new Map<number, number>()
+    
+    allSensorResults.flat().forEach((point: any) => {
+      const existingValue = timeValueMap.get(point.timestamp) || 0
+      timeValueMap.set(point.timestamp, existingValue + point.value)
+    })
+    
+    // Convert to final format
+    const aggregatedData: WeaveSensorData[] = Array.from(timeValueMap.entries())
+      .map(([timestamp, value]) => ({ timestamp, value }))
+      .sort((a, b) => a.timestamp - b.timestamp)
+
+    // Cache for 30 minutes
+    await redis.set(cacheKey, JSON.stringify(aggregatedData), 30 * 60)
+    
+    console.log(`✅ Weave Studio sensor data fetched: ${aggregatedData.length} data points`)
+    return aggregatedData
+  } catch (error) {
+    console.error("Error fetching Weave Studio sensor data:", error)
+    return []
+  }
+}
+
+function calculateEnergyMetrics(sensorData: HuntSensorData[] | WeaveSensorData[], _config: EnergyConfig) {
   if (sensorData.length === 0) {
     return {
       actualUsage: [],
@@ -337,27 +433,29 @@ export async function GET() {
     let energyUsageData
     let energySavingsData
 
-    if (user.name === "The Hunt") {
-      console.log("🔧 Fetching real energy data for The Hunt...")
+    if (user.name === "The Hunt" || user.name === "Weave Studio") {
+      console.log(`🔧 Fetching real energy data for ${user.name}...`)
       
       // Get energy configuration
       const config = await getEnergyConfig()
       
-      // Fetch Hunt's sensor data (this will be the actual cumulative data from GTSDB)
-      const huntSensorData = await fetchHuntSensorData()
+      // Fetch sensor data based on user
+      const sensorData = user.name === "The Hunt" 
+        ? await fetchHuntSensorData()
+        : await fetchWeaveSensorData()
       
       // Calculate energy metrics
-      const metrics = calculateEnergyMetrics(huntSensorData, config)
+      const metrics = calculateEnergyMetrics(sensorData, config)
       
       // Generate date labels for the last 30 days
-      const dateLabels = huntSensorData.map(point => {
+      const dateLabels = sensorData.map(point => {
         const date = new Date(point.timestamp * 1000)
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })
       })
       
       energyUsageData = {
         labels: dateLabels.length > 0 ? dateLabels : ["No Data"],
-        actualUsage: huntSensorData.map(point => point.value), // Cumulative readings per day
+        actualUsage: sensorData.map(point => point.value), // Cumulative readings per day
         energyForecast: [], // Empty for Hunt user
         baselineForecast: [], // Empty for Hunt user
       }
@@ -375,7 +473,7 @@ export async function GET() {
         }
       }
       
-      console.log("✅ Using real energy data for The Hunt")
+      console.log(`✅ Using real energy data for ${user.name}`)
     } else {
       // Use empty/minimal data for other users
       energyUsageData = {

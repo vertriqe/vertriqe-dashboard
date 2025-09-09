@@ -41,6 +41,7 @@ export default function ManagementPage() {
   const logo = getLogoForUser(user?.email)
   const currentDate = getCurrentFormattedDate()
   const isHuntUser = user?.name === "The Hunt"
+  const isWeaveStudioUser = user?.name === "Weave Studio"
 
   useEffect(() => {
     const fetchData = async () => {

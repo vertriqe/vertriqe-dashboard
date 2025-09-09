@@ -116,6 +116,11 @@ const getDefaultUsers = () => {
       name: "The Hunt", 
       email: "hunt@vertriqe.com",
       password: "huntpass123",
+    },
+    {
+      name: "Weave Studio",
+      email: "weave@vertriqe.com", 
+      password: "weave-vertriqe-2025!",
     }
   ]
 }
@@ -147,6 +152,14 @@ const initializeStorage = async () => {
     } else {
       console.log("User data already exists")
     }
+
+    // Set user location data for Weave Studio
+    await redis.set("user_location:weave@vertriqe.com", JSON.stringify({
+      name: "To Kwa Wan",
+      lat: "22.32366",
+      lon: "114.188835"
+    }))
+    console.log("Location data set for Weave Studio")
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error("Error during storage initialization:", errorMessage)
@@ -159,6 +172,18 @@ const initializeStorage = async () => {
     defaultUsers.forEach((user: any) => {
       console.log(`  - ${user.name} (${user.email})`)
     })
+
+    // Still try to set location data for Weave Studio
+    try {
+      await redis.set("user_location:weave@vertriqe.com", JSON.stringify({
+        name: "To Kwa Wan",
+        lat: "22.32366", 
+        lon: "114.188835"
+      }))
+      console.log("Location data set for Weave Studio")
+    } catch (locationError) {
+      console.error("Failed to set Weave Studio location data:", locationError)
+    }
   }
 }
 

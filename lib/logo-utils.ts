@@ -8,6 +8,10 @@ export function getLogoForUser(userEmail?: string): {
       src: '/images/the-hunt-logo.png',
       alt: 'The Hunt Logo'
     },
+    'weave@vertriqe.com': {
+      src: '/images/weave-logo.png',
+      alt: 'Weave Studio Logo'
+    },
     // Default fallback for all other users
     default: {
       src: '/images/vertriqe-logo.png',

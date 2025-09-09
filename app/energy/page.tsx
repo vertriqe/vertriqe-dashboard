@@ -101,6 +101,11 @@ export default function EnergyDashboard() {
     "vertriqe_25123_cttp": { name: "Area 4 - Instant Energy (25123)", owner: "The Hunt" },
     "vertriqe_25124_cctp": { name: "Area 5 - Total Energy (25124)", owner: "The Hunt" },
     "vertriqe_25124_cttp": { name: "Area 5 - Instant Energy (25124)", owner: "The Hunt" },
+    
+    // Weave Studio's sensors
+    "vertriqe_25245_cttp": { name: "AC 1 - Instant Energy", owner: "Weave Studio" },
+    "vertriqe_25247_cttp": { name: "AC 2 - Instant Energy", owner: "Weave Studio" },
+    "vertriqe_25248_cttp": { name: "Combined - Instant Energy", owner: "Weave Studio" },
   }
 
   // Filter sensors based on current user

@@ -59,6 +59,8 @@ export default function Dashboard() {
   const { user } = useUser()
   const currentDate = getCurrentFormattedDate()
   const isHuntUser = user?.name === "The Hunt"
+  const isWeaveStudioUser = user?.name === "Weave Studio"
+  const isRealDataUser = isHuntUser || isWeaveStudioUser
   const logo = getLogoForUser(user?.email)
 
   useEffect(() => {
@@ -172,7 +174,9 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-medium">{isHuntUser ? "Kwun Tong" : dashboardData.weatherLocation.name}</h3>
+                  <h3 className="font-medium">
+                    {isHuntUser ? "Kwun Tong" : isWeaveStudioUser ? "Ngau Tau Kok" : dashboardData.weatherLocation.name}
+                  </h3>
                   <p className="text-sm text-slate-300 mt-1">{dashboardData.weatherLocation.description}</p>
                   <div className="mt-2 text-sm text-slate-400">
                     {dashboardData.weatherLocation.condition} | {dashboardData.weatherLocation.temperature}
@@ -204,7 +208,7 @@ export default function Dashboard() {
                     <div className="w-4 h-4 bg-blue-500"></div>
                     <span className="text-sm">Actual Usage (kWh)</span>
                   </div>
-                  {!isHuntUser && (
+                  {!isRealDataUser && (
                     <>
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-pink-500"></div>
@@ -221,7 +225,7 @@ export default function Dashboard() {
                   className="h-64 mt-4"
                   data={{
                     labels: dashboardData.energyUsage.labels,
-                    datasets: isHuntUser 
+                    datasets: isRealDataUser 
                       ? [
                           {
                             label: "Actual Usage (kWh)",
