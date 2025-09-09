@@ -89,9 +89,7 @@ export default function PerformancePage() {
               <Image
                 src={logo.src}
                 alt={logo.alt}
-                width={120}
-                height={36}
-                className="h-auto filter brightness-0 invert"
+                className="h-auto filter brightness-0 invert max-h-200 max-h-50"
               />
               <h1 className="text-2xl font-semibold">Hello {user?.name || "User"}</h1>
             </div>
