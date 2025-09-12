@@ -35,7 +35,7 @@ export function Sidebar() {
       icon: BarChart3,
       label: "Performance",
       isActive: pathname === "/performance",
-      disabled: isWeaveUser, // Hide performance page for Weave Studio users
+      disabled: false,
     },
     {
       href: "/management",

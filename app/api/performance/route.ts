@@ -31,7 +31,7 @@ interface TSDBConfig {
   }
 }
 
-async function getUserFromToken(): Promise<string | null> {
+async function getUserFromToken(): Promise<{ email: string; name: string } | null> {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get("auth-token")?.value
@@ -43,7 +43,10 @@ async function getUserFromToken(): Promise<string | null> {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
     const { payload } = await jwtVerify(token, secret)
 
-    return payload.email as string
+    return { 
+      email: payload.email as string,
+      name: payload.name as string
+    }
   } catch (error) {
     console.error("Error getting user from token:", error)
     return null
@@ -373,13 +376,81 @@ async function getUserLocation(email: string): Promise<WeatherLocation> {
 
 export async function GET(request: Request) {
   try {
-    const userEmail = await getUserFromToken()
+    const user = await getUserFromToken()
 
-    if (!userEmail) {
+    if (!user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
     }
 
-    const userLocation = await getUserLocation(userEmail)
+    const userLocation = await getUserLocation(user.email)
+
+    // Check if user is Weave Studio - return empty data
+    if (user.name === "Weave Studio") {
+      const { searchParams } = new URL(request.url)
+      const period = searchParams.get('period') || 'week'
+      
+      let labels: string[]
+      const now = new Date()
+      
+      switch (period) {
+        case 'today':
+          labels = Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`)
+          break
+        case 'month':
+          labels = Array.from({length: 30}, (_, i) => {
+            const date = new Date(now)
+            date.setDate(date.getDate() - (29 - i))
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          })
+          break
+        case 'week':
+        default:
+          labels = Array.from({length: 7}, (_, i) => {
+            const date = new Date(now)
+            date.setDate(date.getDate() - (6 - i))
+            return date.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' })
+          })
+          break
+      }
+
+      const dataLength = labels.length
+
+      return NextResponse.json({
+        date: new Date().toLocaleDateString("en-US", {
+          day: "numeric",
+          month: "long", 
+          year: "numeric",
+        }),
+        weather: {
+          condition: "Cloudy",
+          range: "28/31°C",
+        },
+        metrics: {
+          energySaved: "0kWh",
+          co2Reduced: "0kg",
+          estimateSaving: "$0",
+          averageIndoorTemperature: "N/A",
+          averageIndoorHumidity: "N/A",
+          averageOutdoorTemperature: "N/A",
+          averageOutdoorHumidity: "N/A",
+        },
+        usageData: {
+          labels: labels,
+          normalUsage: Array(dataLength).fill(0),
+          otUsage: Array(dataLength).fill(0),
+          baseline: Array(dataLength).fill(0),
+        },
+        savingPercentage: {
+          current: "0%",
+          data: Array(dataLength).fill(0),
+        },
+        acUsage: {
+          acOn: 0,
+          acOff: 0,
+          otOn: 0,
+        },
+      })
+    }
 
     // Parse query parameters for time period
     const { searchParams } = new URL(request.url)
