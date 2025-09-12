@@ -131,7 +131,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="bg-slate-900 min-h-screen p-6 text-white">
+    <div className="min-h-screen p-6 text-white">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-start mb-8">
           <div className="flex items-center gap-4">
@@ -164,21 +164,25 @@ export default function Dashboard() {
             </div>
 
             {/* Weather Card */}
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-4 flex">
-                <div className="mr-4 bg-blue-500 rounded-lg p-2 h-16 w-16 flex items-center justify-center">
+            <Card className="bg-slate-800/50 border-slate-700/50 shadow-xl">
+              <CardContent className="p-6 flex">
+                <div className="mr-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl p-4 h-20 w-20 flex items-center justify-center shadow-lg">
                   <div className="relative">
-                    <div className="absolute top-0 left-0 w-8 h-8 bg-blue-400 rounded-full"></div>
-                    <Sun className="h-6 w-6 text-yellow-300 absolute bottom-0 right-0" />
+                    <div className="absolute top-0 left-0 w-6 h-6 bg-blue-300/50 rounded-full"></div>
+                    <Sun className="h-8 w-8 text-yellow-200 absolute bottom-0 right-0" />
                   </div>
                 </div>
-                <div>
-                  <h3 className="font-medium">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg text-white">
                     {isHuntUser ? "Kwun Tong" : isWeaveStudioUser ? "To Kwa Wan" : dashboardData.weatherLocation.name}
                   </h3>
-                  <p className="text-sm text-slate-300 mt-1">{dashboardData.weatherLocation.description}</p>
-                  <div className="mt-2 text-sm text-slate-400">
-                    {dashboardData.weatherLocation.condition} | {dashboardData.weatherLocation.temperature}
+                  <p className="text-slate-300 mt-1">{dashboardData.weatherLocation.description}</p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="px-3 py-1 bg-blue-500/20 rounded-full text-blue-300 text-sm">
+                      {dashboardData.weatherLocation.condition}
+                    </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-slate-300 font-medium">{dashboardData.weatherLocation.temperature}</span>
                   </div>
                 </div>
               </CardContent>
@@ -200,61 +204,66 @@ export default function Dashboard() {
             </div>
 
             {/* Energy Usage Chart */}
-            <Card className="bg-slate-800 border-slate-700 mt-6">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-blue-500"></div>
-                    <span className="text-sm">Actual Usage (kWh)</span>
+            <Card className="bg-slate-800/50 border-slate-700/50 shadow-xl mt-6">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-white">Energy Usage Analytics</h3>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <span className="text-sm text-slate-300">Actual Usage (kWh)</span>
+                    </div>
+                    {!isRealDataUser && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
+                          <span className="text-sm text-slate-300">Energy Forecast</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-white rounded-full"></div>
+                          <span className="text-sm text-slate-300">Baseline Forecast</span>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  {!isRealDataUser && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-pink-500"></div>
-                        <span className="text-sm">Energy Forecast</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-white"></div>
-                        <span className="text-sm">Baseline Forecast</span>
-                      </div>
-                    </>
-                  )}
                 </div>
-                <LineChart
-                  className="h-64 mt-4"
-                  data={{
-                    labels: dashboardData.energyUsage.labels,
-                    datasets: isRealDataUser 
-                      ? [
-                          {
-                            label: "Actual Usage (kWh)",
-                            data: dashboardData.energyUsage.actualUsage,
-                            borderColor: "#3b82f6",
-                            backgroundColor: "#3b82f6",
-                          },
-                        ]
-                      : [
-                          {
-                            label: "Actual Usage (kWh)",
-                            data: dashboardData.energyUsage.actualUsage,
-                            borderColor: "#3b82f6",
-                            backgroundColor: "#3b82f6",
-                          },
-                          {
-                            label: "Energy Forecast",
-                            data: dashboardData.energyUsage.energyForecast,
-                            borderColor: "#ec4899",
-                            backgroundColor: "#ec4899",
-                          },
-                          {
-                            label: "Baseline Forecast",
-                            data: dashboardData.energyUsage.baselineForecast,
-                            borderColor: "#ffffff",
-                            backgroundColor: "#ffffff",
-                          },
-                        ],
-                  }}
-                />
+                <div className="bg-slate-900/30 rounded-xl p-4">
+                  <LineChart
+                    className="h-64"
+                    data={{
+                      labels: dashboardData.energyUsage.labels,
+                      datasets: isRealDataUser 
+                        ? [
+                            {
+                              label: "Actual Usage (kWh)",
+                              data: dashboardData.energyUsage.actualUsage,
+                              borderColor: "#3b82f6",
+                              backgroundColor: "#3b82f6",
+                            },
+                          ]
+                        : [
+                            {
+                              label: "Actual Usage (kWh)",
+                              data: dashboardData.energyUsage.actualUsage,
+                              borderColor: "#3b82f6",
+                              backgroundColor: "#3b82f6",
+                            },
+                            {
+                              label: "Energy Forecast",
+                              data: dashboardData.energyUsage.energyForecast,
+                              borderColor: "#ec4899",
+                              backgroundColor: "#ec4899",
+                            },
+                            {
+                              label: "Baseline Forecast",
+                              data: dashboardData.energyUsage.baselineForecast,
+                              borderColor: "#ffffff",
+                              backgroundColor: "#ffffff",
+                            },
+                          ],
+                    }}
+                  />
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -271,73 +280,75 @@ export default function Dashboard() {
 
             {/* Metrics Cards */}
             <div className="grid grid-cols-3 gap-4 mt-6">
-              <Card className="bg-slate-800 border-slate-700 relative">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                      <span className="text-sm">Total Saving</span>
+              <Card className="bg-slate-800/50 border-slate-700/50 shadow-xl relative group hover:scale-105 transition-transform duration-200">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg"></div>
+                      <span className="text-sm font-medium text-slate-300">Total Saving</span>
                     </div>
                     {dashboardData.energySavings.calculationInfo && (
                       <button
                         onClick={() => setShowCalculationInfo(showCalculationInfo === 'totalSaving' ? null : 'totalSaving')}
-                        className="text-slate-400 hover:text-white transition-colors"
+                        className="text-slate-400 hover:text-white transition-colors p-1 rounded-full hover:bg-slate-700/50"
                       >
                         <Info className="h-4 w-4" />
                       </button>
                     )}
                   </div>
-                  <div className="text-2xl font-bold">{dashboardData.energySavings.totalSaving}</div>
+                  <div className="text-2xl font-bold text-white">{dashboardData.energySavings.totalSaving}</div>
                   {showCalculationInfo === 'totalSaving' && (
-                    <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-700 border border-slate-600 rounded-md text-xs z-10">
+                    <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-800/90 backdrop-blur border border-slate-600/50 rounded-lg text-xs z-10 shadow-xl">
                       {getCalculationInfo('totalSaving')}
                     </div>
                   )}
                 </CardContent>
               </Card>
-              <Card className="bg-slate-800 border-slate-700 relative">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                      <span className="text-sm">Total CO2 Reduced</span>
+              
+              <Card className="bg-slate-800/50 border-slate-700/50 shadow-xl relative group hover:scale-105 transition-transform duration-200">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-full shadow-lg"></div>
+                      <span className="text-sm font-medium text-slate-300">CO2 Reduced</span>
                     </div>
                     {dashboardData.energySavings.calculationInfo && (
                       <button
                         onClick={() => setShowCalculationInfo(showCalculationInfo === 'co2Reduced' ? null : 'co2Reduced')}
-                        className="text-slate-400 hover:text-white transition-colors"
+                        className="text-slate-400 hover:text-white transition-colors p-1 rounded-full hover:bg-slate-700/50"
                       >
                         <Info className="h-4 w-4" />
                       </button>
                     )}
                   </div>
-                  <div className="text-2xl font-bold">{dashboardData.energySavings.co2Reduced}</div>
+                  <div className="text-2xl font-bold text-white">{dashboardData.energySavings.co2Reduced}</div>
                   {showCalculationInfo === 'co2Reduced' && (
-                    <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-700 border border-slate-600 rounded-md text-xs z-10">
+                    <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-800/90 backdrop-blur border border-slate-600/50 rounded-lg text-xs z-10 shadow-xl">
                       {getCalculationInfo('co2Reduced')}
                     </div>
                   )}
                 </CardContent>
               </Card>
-              <Card className="bg-slate-800 border-slate-700 relative">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-                      <span className="text-sm">Total Energy Saved</span>
+              
+              <Card className="bg-slate-800/50 border-slate-700/50 shadow-xl relative group hover:scale-105 transition-transform duration-200">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full shadow-lg"></div>
+                      <span className="text-sm font-medium text-slate-300">Energy Saved</span>
                     </div>
                     {dashboardData.energySavings.calculationInfo && (
                       <button
                         onClick={() => setShowCalculationInfo(showCalculationInfo === 'energySaved' ? null : 'energySaved')}
-                        className="text-slate-400 hover:text-white transition-colors"
+                        className="text-slate-400 hover:text-white transition-colors p-1 rounded-full hover:bg-slate-700/50"
                       >
                         <Info className="h-4 w-4" />
                       </button>
                     )}
                   </div>
-                  <div className="text-2xl font-bold">{dashboardData.energySavings.energySaved}</div>
+                  <div className="text-2xl font-bold text-white">{dashboardData.energySavings.energySaved}</div>
                   {showCalculationInfo === 'energySaved' && (
-                    <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-700 border border-slate-600 rounded-md text-xs z-10">
+                    <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-slate-800/90 backdrop-blur border border-slate-600/50 rounded-lg text-xs z-10 shadow-xl">
                       {getCalculationInfo('energySaved')}
                     </div>
                   )}

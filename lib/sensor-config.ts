@@ -11,21 +11,21 @@ export interface SensorConfig {
 // Weave Studio sensor configurations
 export const WEAVE_SENSORS: SensorConfig[] = [
   {
-    key: "vertriqe_25245_weave",
+    key: "vertriqe_25247_weave",
     name: "AC 1 - Instant Energy",
     type: "instant",
     owner: "Weave Studio",
     description: "Air conditioner 1 instant power consumption"
   },
   {
-    key: "vertriqe_25247_weave",
+    key: "vertriqe_25248_weave",
     name: "AC 2 - Instant Energy",
     type: "instant", 
     owner: "Weave Studio",
     description: "Air conditioner 2 instant power consumption"
   },
   {
-    key: "vertriqe_25248_weave",
+    key: "vertriqe_25245_weave",
     name: "Combined - Instant Energy",
     type: "instant",
     owner: "Weave Studio", 
@@ -181,7 +181,7 @@ export function getHuntCumulativeSensors(): string[] {
 
 // Mapping for accumulated sensors to their actual sensor keys (for Weave Studio) weave = cttp
 export const ACCUMULATED_SENSOR_MAPPING: Record<string, string> = {
-  'weave_ac1_accumulated': 'vertriqe_25245_weave',
-  'weave_ac2_accumulated': 'vertriqe_25247_weave', 
-  'weave_combined_accumulated': 'vertriqe_25248_weave'
+  'weave_ac1_accumulated': 'vertriqe_25247_weave',
+  'weave_ac2_accumulated': 'vertriqe_25248_weave', 
+  'weave_combined_accumulated': 'vertriqe_25245_weave'
 }
