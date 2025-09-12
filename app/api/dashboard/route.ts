@@ -268,12 +268,16 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
 
     const allSensorResults = await Promise.all(sensorPromises)
     
-    // Combine all sensor data and aggregate by timestamp
+    // Combine all sensor data and aggregate by normalized daily timestamp
     const timeValueMap = new Map<number, number>()
     
     allSensorResults.flat().forEach((point: any) => {
-      const existingValue = timeValueMap.get(point.timestamp) || 0
-      timeValueMap.set(point.timestamp, existingValue + point.value)
+      // Normalize timestamp to daily timestamp (start of day)
+      const dateOfTs = new Date(point.timestamp * 1000).toISOString().split("T")[0]
+      const normalizedTimestamp = new Date(dateOfTs).getTime() / 1000
+      
+      const existingValue = timeValueMap.get(normalizedTimestamp) || 0
+      timeValueMap.set(normalizedTimestamp, existingValue + point.value)
     })
     
     // Convert to final format

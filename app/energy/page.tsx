@@ -76,6 +76,9 @@ export default function EnergyDashboard() {
   }
 
   const aggregationTypes = ["max", "min", "avg", "sum"]
+  
+  // Check if current user is Weave Studio
+  const isWeaveUser = user?.name === "Weave Studio"
 
 // Project	Serial Number	Site 	Energy Meter 	AC Controller	Present Sensor 	Ambient Sensor 	Supply Air Sensor
 // ADEST-000001	ADEST-000001-0001	The Hunt	25120		25133	25114	25138
@@ -217,8 +220,7 @@ export default function EnergyDashboard() {
           start_timestamp: startTimestamp,
           end_timestamp: now,
           downsampling: timeRange.downsampling,
-          aggregation: activeAggregation,
-
+          aggregation: activeAggregation
         }
       }
 
@@ -422,23 +424,25 @@ export default function EnergyDashboard() {
             </Tabs>
           </div>
 
-          <div className="flex items-center gap-2">
-            {aggregationTypes.map((type) => (
-              <Button
-                key={type}
-                variant={activeAggregation === type ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveAggregation(type)}
-                className={
-                  activeAggregation === type
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-slate-700 border-slate-600 hover:bg-slate-600"
-                }
-              >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </Button>
-            ))}
-          </div>
+          {!isWeaveUser && (
+            <div className="flex items-center gap-2">
+              {aggregationTypes.map((type) => (
+                <Button
+                  key={type}
+                  variant={activeAggregation === type ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveAggregation(type)}
+                  className={
+                    activeAggregation === type
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "bg-slate-700 border-slate-600 hover:bg-slate-600"
+                  }
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Chart */}

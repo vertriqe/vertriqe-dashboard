@@ -174,7 +174,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <h3 className="font-medium">
-                    {isHuntUser ? "Kwun Tong" : isWeaveStudioUser ? "Ngau Tau Kok" : dashboardData.weatherLocation.name}
+                    {isHuntUser ? "Kwun Tong" : isWeaveStudioUser ? "To Kwa Wan" : dashboardData.weatherLocation.name}
                   </h3>
                   <p className="text-sm text-slate-300 mt-1">{dashboardData.weatherLocation.description}</p>
                   <div className="mt-2 text-sm text-slate-400">
