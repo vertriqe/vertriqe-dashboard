@@ -13,6 +13,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const { user } = useUser()
   const isHuntUser = user?.name === "The Hunt"
+  const isWeaveUser = user?.name === "Weave Studio"
 
   const navItems = [
     {
@@ -34,7 +35,7 @@ export function Sidebar() {
       icon: BarChart3,
       label: "Performance",
       isActive: pathname === "/performance",
-      disabled: false,
+      disabled: isWeaveUser, // Hide performance page for Weave Studio users
     },
     {
       href: "/management",
