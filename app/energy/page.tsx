@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import React from "react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,6 +12,7 @@ import { LineChart } from "@/components/line-chart"
 import { getLogoForUser } from "@/lib/logo-utils"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
 import { useUser } from "@/contexts/user-context"
+import { getSensorsByOwner, ACCUMULATED_SENSOR_MAPPING } from "@/lib/sensor-config"
 // Weather data will be fetched via API instead of direct import
 
 interface TSDBDataPoint {
@@ -87,32 +89,23 @@ export default function EnergyDashboard() {
 // ADEST-000001	ADEST-000001-0004	The Hunt	25123	25153	25136	25117	25141
 // ADEST-000001	ADEST-000001-0005	The Hunt	25124	25152	25137	25118	25142
 
-  // All available sensors with their display names and user ownership
-  const allSensors = {
-    // Hai Sang's sensors
-    "vertriqe_24833_cttp": { name: "Hai Sang Cold Room Power Consumption", owner: "Hai Sang" },
-    "vertriqe_24836_temp2": { name: "Hai Sang Cold Room Temperature", owner: "Hai Sang" },
+  // Get sensors from centralized configuration
+  const allSensors = React.useMemo(() => {
+    // Convert sensor config to the format expected by the UI
+    const sensorMap: Record<string, { name: string; owner: string }> = {}
     
-    // The Hunt's sensors
-    "vertriqe_25120_cctp": { name: "Area 1 - Total Energy (25120)", owner: "The Hunt" },
-    "vertriqe_25120_cttp": { name: "Area 1 - Instant Energy (25120)", owner: "The Hunt" },
-    "vertriqe_25121_cctp": { name: "Area 2 - Total Energy (25121)", owner: "The Hunt" },
-    "vertriqe_25121_cttp": { name: "Area 2 - Instant Energy (25121)", owner: "The Hunt" },
-    "vertriqe_25122_cctp": { name: "Area 3 - Total Energy (25122)", owner: "The Hunt" },
-    "vertriqe_25122_cttp": { name: "Area 3 - Instant Energy (25122)", owner: "The Hunt" },
-    "vertriqe_25123_cctp": { name: "Area 4 - Total Energy (25123)", owner: "The Hunt" },
-    "vertriqe_25123_cttp": { name: "Area 4 - Instant Energy (25123)", owner: "The Hunt" },
-    "vertriqe_25124_cctp": { name: "Area 5 - Total Energy (25124)", owner: "The Hunt" },
-    "vertriqe_25124_cttp": { name: "Area 5 - Instant Energy (25124)", owner: "The Hunt" },
+    if (user?.name) {
+      const userSensors = getSensorsByOwner(user.name)
+      userSensors.forEach(sensor => {
+        sensorMap[sensor.key] = {
+          name: sensor.name,
+          owner: sensor.owner
+        }
+      })
+    }
     
-    // Weave Studio's sensors
-    "vertriqe_25245_cttp": { name: "AC 1 - Instant Energy", owner: "Weave Studio" },
-    "vertriqe_25247_cttp": { name: "AC 2 - Instant Energy", owner: "Weave Studio" },
-    "vertriqe_25248_cttp": { name: "Combined - Instant Energy", owner: "Weave Studio" },
-    "weave_ac1_accumulated": { name: "AC 1 - Accumulated Energy", owner: "Weave Studio" },
-    "weave_ac2_accumulated": { name: "AC 2 - Accumulated Energy", owner: "Weave Studio" },
-    "weave_combined_accumulated": { name: "Combined - Accumulated Energy", owner: "Weave Studio" },
-  }
+    return sensorMap
+  }, [user?.name])
 
   // Filter sensors based on current user
   const availableSensors = user?.name 
@@ -205,12 +198,7 @@ export default function EnergyDashboard() {
 
       // Map accumulated sensors to their actual sensor keys
       if (isAccumulated) {
-        const keyMapping: Record<string, string> = {
-          'weave_ac1_accumulated': 'vertriqe_25245_cttp',
-          'weave_ac2_accumulated': 'vertriqe_25247_cttp', 
-          'weave_combined_accumulated': 'vertriqe_25248_cttp'
-        }
-        actualSensorKey = keyMapping[selectedOffice] || selectedOffice
+        actualSensorKey = ACCUMULATED_SENSOR_MAPPING[selectedOffice] || selectedOffice
       }
 
       const payload = {

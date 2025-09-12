@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getWeaveDashboardSensors } from "@/lib/sensor-config"
 
 interface TSDBDataPoint {
   key: string
@@ -14,12 +15,8 @@ interface TSDBResponse {
   }
 }
 
-// Weave Studio's instant energy sensors
-const weaveSensors = [
-  "vertriqe_25245_cttp",  // AC 1 - Instant Energy
-  "vertriqe_25247_cttp",  // AC 2 - Instant Energy
-  "vertriqe_25248_cttp"   // Combined - Instant Energy
-]
+// Get Weave Studio's dashboard sensors from centralized config
+const weaveSensors = getWeaveDashboardSensors()
 
 export async function GET(request: NextRequest) {
   try {

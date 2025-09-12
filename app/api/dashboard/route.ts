@@ -8,6 +8,7 @@ import {
   getDummyWeatherData,
   type WeatherLocation,
 } from "@/lib/weather-service"
+import { getWeaveDashboardSensors, getHuntCumulativeSensors } from "@/lib/sensor-config"
 
 interface EnergyConfig {
   savingsPercentage: number
@@ -111,13 +112,7 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
     const tsdbConfig = await fetchTsdbConfig()
     
     // The Hunt's cumulative sensors
-    const huntCumulativeSensors = [
-      "vertriqe_25120_cctp",
-      "vertriqe_25121_cctp", 
-      "vertriqe_25122_cctp",
-      "vertriqe_25123_cctp",
-      "vertriqe_25124_cctp"
-    ]
+    const huntCumulativeSensors = getHuntCumulativeSensors()
     
     const now = Math.floor(Date.now() / 1000)
     const thirtyDaysAgo = now - (30 * 24 * 3600) // 30 days in seconds
@@ -217,11 +212,7 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
     const tsdbConfig = await fetchTsdbConfig()
     
     // Weave Studio's instant energy sensors
-    const weaveSensors = [
-      "vertriqe_25245_cttp",  // AC 1 - Instant Energy
-      "vertriqe_25247_cttp",  // AC 2 - Instant Energy
-      "vertriqe_25248_cttp"   // Combined - Instant Energy
-    ]
+    const weaveSensors = getWeaveDashboardSensors()
     
     const now = Math.floor(Date.now() / 1000)
     const thirtyDaysAgo = now - (30 * 24 * 3600) // 30 days in seconds
