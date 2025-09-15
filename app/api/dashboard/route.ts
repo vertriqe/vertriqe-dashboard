@@ -226,7 +226,7 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
           start_timestamp: thirtyDaysAgo,
           end_timestamp: now,
           downsampling: 86400, // Daily aggregation
-          aggregation: "sum"    // Sum for energy consumption
+          aggregation: "avg"    // Sum for energy consumption
         }
       }
 
