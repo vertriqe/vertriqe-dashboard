@@ -11,7 +11,7 @@ interface User {
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    const { email, password, rememberMe = false } = await request.json()
 
     if (!email || !password) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 })
@@ -70,12 +70,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid email or password" }, { status: 401 })
     }
 
-    // Create JWT token
+    // Create JWT token with appropriate expiration
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
+    const expirationTime = rememberMe ? "30d" : "24h" // 30 days for remember me, 24 hours for regular
+    const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24 // 30 days for remember me, 24 hours for regular
+    
     const token = await new SignJWT({ email: user.email, name: user.name })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
-      .setExpirationTime("24h")
+      .setExpirationTime(expirationTime)
       .sign(secret)
 
     // Set HTTP-only cookie
@@ -84,7 +87,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: maxAge,
       path: "/",
     })
 
@@ -95,7 +98,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         message: "Internal server error",
-        debug: error.message,
+        debug: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
     )

@@ -169,7 +169,7 @@ export function getWeaveSensorKeys(): string[] {
 export function getWeaveDashboardSensors(): string[] {
   // Return only the instant energy sensors for dashboard aggregation
   return WEAVE_SENSORS
-    .filter(sensor => sensor.type === 'instant' && !sensor.key.includes('accumulated'))
+    .filter(sensor => sensor.type === 'instant' && !sensor.key.includes('accumulated') && sensor.name.toLowerCase().includes('combined'))
     .map(sensor => sensor.key)
 }
 

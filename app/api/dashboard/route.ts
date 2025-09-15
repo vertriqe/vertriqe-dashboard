@@ -219,7 +219,7 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
     
     // Fetch data for each sensor
     const sensorPromises = weaveSensors.map(async (sensorKey) => {
-      const payload = {
+      let payload = {
         operation: "read",
         key: sensorKey,
         Read: {
@@ -229,6 +229,8 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
           aggregation: "avg"    // Sum for energy consumption
         }
       }
+
+
 
       const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
         method: "POST",
@@ -245,15 +247,18 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
 
       const result = await response.json()
       if (result.success && result.data.success && result.data.data.length > 0) {
-        return result.data.data.map((point: any) => {
+        const _result= result.data.data.map((point: any) => {
           const config = getKeyConfig(sensorKey, tsdbConfig)
           return {
             timestamp: point.timestamp,
-            value: point.value * config.multiplier + config.offset,
-            key: sensorKey
+            value: (point.value * config.multiplier + config.offset) * 24, // Apply multiplier and offset
+            key: sensorKey // For debugging purposes
           }
         })
+        
+        return _result
       }
+      
       return []
     })
 
