@@ -1,6 +1,7 @@
 "use client"
 
-import { Home, Briefcase, Users, Zap, BarChart3, Settings } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Home, Briefcase, Users, Zap, BarChart3, Settings, Shield } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LogoutButton } from "./logout-button"
@@ -14,6 +15,11 @@ export function Sidebar() {
   const { user } = useUser()
   const isHuntUser = user?.name === "The Hunt"
   const isWeaveUser = user?.name === "Weave Studio"
+  const [isLocalhost, setIsLocalhost] = useState(false)
+
+  useEffect(() => {
+    setIsLocalhost(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  }, [])
 
   const navItems = [
     {
@@ -51,6 +57,14 @@ export function Sidebar() {
       isActive: pathname === "/users",
       disabled: true,
     },
+    {
+      href: "/super-admin",
+      icon: Shield,
+      label: "Super Admin",
+      isActive: pathname === "/super-admin",
+      disabled: false,
+      showOnLocalhost: true,
+    },
   ]
 
   return (
@@ -64,7 +78,12 @@ export function Sidebar() {
       <div className="flex-1 flex flex-col gap-3 relative z-10">
         {navItems.map((item) => {
           const IconComponent = item.icon
-          
+
+          // Hide localhost-only items when not on localhost
+          if (item.showOnLocalhost && !isLocalhost) {
+            return null
+          }
+
           if (item.disabled) {
             return (
               <div

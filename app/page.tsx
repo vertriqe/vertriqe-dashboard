@@ -213,6 +213,13 @@ export default function Dashboard() {
                       <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                       <span className="text-sm text-slate-300">Actual Usage (kWh)</span>
                     </div>
+                    {/* Show baseline for real data users if available */}
+                    {isRealDataUser && dashboardData.energyUsage.baselineForecast?.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-white rounded-full"></div>
+                        <span className="text-sm text-slate-300">Baseline</span>
+                      </div>
+                    )}
                     {!isRealDataUser && (
                       <>
                         <div className="flex items-center gap-2">
@@ -232,7 +239,7 @@ export default function Dashboard() {
                     className="h-64"
                     data={{
                       labels: dashboardData.energyUsage.labels,
-                      datasets: isRealDataUser 
+                      datasets: isRealDataUser
                         ? [
                             {
                               label: "Actual Usage (kWh)",
@@ -240,6 +247,13 @@ export default function Dashboard() {
                               borderColor: "#3b82f6",
                               backgroundColor: "#3b82f6",
                             },
+                            // Add baseline for real data users if available
+                            ...(dashboardData.energyUsage.baselineForecast?.length > 0 ? [{
+                              label: "Baseline",
+                              data: dashboardData.energyUsage.baselineForecast,
+                              borderColor: "#ffffff",
+                              backgroundColor: "#ffffff",
+                            }] : [])
                           ]
                         : [
                             {

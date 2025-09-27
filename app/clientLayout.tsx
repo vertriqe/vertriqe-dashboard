@@ -16,7 +16,7 @@ export default function ClientLayout({
   const isLoginPage = pathname === "/login"
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark">
+    <ThemeProvider attribute="class" defaultTheme="dark" suppressHydrationWarning>
       {isLoginPage ? (
         // Login page without sidebar
         children

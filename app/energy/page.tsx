@@ -412,25 +412,6 @@ export default function EnergyDashboard() {
             </Tabs>
           </div>
 
-          {!isWeaveUser && (
-            <div className="flex items-center gap-2">
-              {aggregationTypes.map((type) => (
-                <Button
-                  key={type}
-                  variant={activeAggregation === type ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveAggregation(type)}
-                  className={
-                    activeAggregation === type
-                      ? "bg-blue-600 hover:bg-blue-700"
-                      : "bg-slate-700 border-slate-600 hover:bg-slate-600"
-                  }
-                >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </Button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Chart */}

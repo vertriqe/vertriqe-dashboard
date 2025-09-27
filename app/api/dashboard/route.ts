@@ -35,12 +35,126 @@ async function getEnergyConfig(): Promise<EnergyConfig> {
   } catch (error) {
     console.warn("Failed to get energy config from Redis:", error)
   }
-  
+
   // Return default config
   return {
     savingsPercentage: 0,
     co2ReductionFactor: 11,
     costPerKwh: 1.317
+  }
+}
+
+async function getBaselineForUser(userName: string): Promise<any> {
+  try {
+    // Map user names to site IDs
+    const siteMapping: Record<string, string> = {
+      "The Hunt": "hunt",
+      "Weave Studio": "weave"
+    }
+
+    const siteId = siteMapping[userName]
+    if (!siteId) {
+      console.log(`No baseline mapping for user: ${userName}`)
+      return null
+    }
+
+    const baselineData = await redis.get(`baseline:${siteId}`)
+    if (baselineData) {
+      const baseline = JSON.parse(baselineData as string)
+      console.log(`✅ Found baseline for ${userName}: ${baseline.regression.type}`)
+      return baseline
+    }
+
+    console.log(`No baseline found for user: ${userName}`)
+    return null
+  } catch (error) {
+    console.error("Error fetching baseline:", error)
+    return null
+  }
+}
+
+async function generateBaselineForecast(
+  timestamps: number[],
+  baseline: any,
+  tsdbConfig: any
+): Promise<number[]> {
+  if (!baseline || !timestamps.length) {
+    return []
+  }
+
+  try {
+    // Get temperature data for the same time range
+    const tempKey = baseline.tempKey || "weather_thehunt_temp_c"
+    const startTime = timestamps[0]
+    const endTime = timestamps[timestamps.length - 1]
+
+    const tempResponse = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        operation: "read",
+        key: tempKey,
+        Read: {
+          start_timestamp: startTime,
+          end_timestamp: endTime,
+          downsampling: 86400, // Daily
+          aggregation: "avg"
+        }
+      })
+    })
+
+    if (!tempResponse.ok) {
+      console.warn("Failed to fetch temperature data for baseline")
+      return []
+    }
+
+    const tempData = await tempResponse.json()
+    if (!tempData.success || !tempData.data.success) {
+      console.warn("No temperature data available for baseline")
+      return []
+    }
+
+    const tempConfig = getKeyConfig(tempKey, tsdbConfig)
+    const tempPoints = tempData.data.data
+
+    // Generate baseline values using the regression equation
+    const baselineValues = timestamps.map(timestamp => {
+      // Find corresponding temperature
+      const tempPoint = tempPoints.find((tp: any) =>
+        Math.abs(tp.timestamp - timestamp) <= 1800 // 30 min tolerance
+      )
+
+      if (!tempPoint) return 0
+
+      // Apply temperature multiplier and offset
+      const temperature = tempPoint.value * tempConfig.multiplier + tempConfig.offset
+
+      // Calculate baseline energy using the regression
+      const regression = baseline.regression
+      let baselineEnergy = 0
+
+      if (regression.type === 'linear') {
+        baselineEnergy = regression.slope * temperature + regression.intercept
+      } else if (regression.type === 'quadratic' && regression.coefficients) {
+        const { a, b, c } = regression.coefficients
+        baselineEnergy = (a || 0) * temperature * temperature + (b || 0) * temperature + (c || 0)
+      } else if (regression.type === 'logarithmic' && temperature > 0) {
+        baselineEnergy = regression.slope * Math.log(temperature) + regression.intercept
+      }
+
+      baselineEnergy *= 24 // Convert to daily energy
+
+      return Math.max(0, baselineEnergy) // Ensure non-negative
+    })
+
+    console.log(`✅ Generated baseline forecast with ${baselineValues.length} points using ${baseline.regression.type} regression`)
+    return baselineValues
+
+  } catch (error) {
+    console.error("Error generating baseline forecast:", error)
+    return []
   }
 }
 
@@ -292,7 +406,12 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
   }
 }
 
-function calculateEnergyMetrics(sensorData: HuntSensorData[] | WeaveSensorData[], _config: EnergyConfig) {
+async function calculateEnergyMetrics(
+  sensorData: HuntSensorData[] | WeaveSensorData[],
+  _config: EnergyConfig,
+  baseline: any = null,
+  tsdbConfig: any = null
+) {
   if (sensorData.length === 0) {
     return {
       actualUsage: [],
@@ -304,24 +423,33 @@ function calculateEnergyMetrics(sensorData: HuntSensorData[] | WeaveSensorData[]
       totalSaving: 0
     }
   }
-  
+
   // Get the latest cumulative value (most recent data point)
   const latestCumulative = sensorData[sensorData.length - 1]?.value || 0
-  
+
   // Calculate savings based on the latest cumulative sum
   const energySaved = 0;// latestCumulative * (config.savingsPercentage / 100)
   const co2Reduced = 0;// energySaved * config.co2ReductionFactor
   const totalSaving = 0;// energySaved * config.costPerKwh
-  
-  // Extract actual usage values (convert to monthly aggregates if needed)
+
+  // Extract actual usage values
   const actualUsage = sensorData.map(point => point.value)
-  
+
   // Energy forecast stays the same (dummy data for now)
   const energyForecast = [2200, 2400, 2300, 2500, 2800, 3500, 3400, 3200, 3000, 2800, 2200, 2300]
-  
-  // Baseline forecast = 125.5% of actual usage
-  const baselineForecast = actualUsage.map(usage => usage * 1.255)
-  
+
+  // Generate baseline forecast from stored regression if available
+  let baselineForecast: number[] = []
+  if (baseline && tsdbConfig) {
+    const timestamps = sensorData.map(point => point.timestamp)
+    baselineForecast = await generateBaselineForecast(timestamps, baseline, tsdbConfig)
+  }
+
+  // Fallback to default calculation if no baseline available
+  if (baselineForecast.length === 0) {
+    baselineForecast = actualUsage.map(usage => usage * 1.255)
+  }
+
   return {
     actualUsage,
     energyForecast,
@@ -435,31 +563,37 @@ export async function GET() {
 
     if (user.name === "The Hunt" || user.name === "Weave Studio") {
       console.log(`🔧 Fetching real energy data for ${user.name}...`)
-      
+
       // Get energy configuration
       const config = await getEnergyConfig()
-      
+
+      // Get TSDB configuration for baseline calculations
+      const tsdbConfig = await fetchTsdbConfig()
+
+      // Get baseline data for this user
+      const baseline = await getBaselineForUser(user.name)
+
       // Fetch sensor data based on user
-      const sensorData = user.name === "The Hunt" 
+      const sensorData = user.name === "The Hunt"
         ? await fetchHuntSensorData()
         : await fetchWeaveSensorData()
-      
-      // Calculate energy metrics
-      const metrics = calculateEnergyMetrics(sensorData, config)
-      
+
+      // Calculate energy metrics with baseline
+      const metrics = await calculateEnergyMetrics(sensorData, config, baseline, tsdbConfig)
+
       // Generate date labels for the last 30 days
       const dateLabels = sensorData.map(point => {
         const date = new Date(point.timestamp * 1000)
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })
       })
-      
+
       energyUsageData = {
         labels: dateLabels.length > 0 ? dateLabels : ["No Data"],
         actualUsage: sensorData.map(point => point.value), // Cumulative readings per day
-        energyForecast: [], // Empty for Hunt user
-        baselineForecast: [], // Empty for Hunt user
+        energyForecast: [], // Empty for real data users
+        baselineForecast: metrics.baselineForecast, // Generated from regression
       }
-      
+
       energySavingsData = {
         percentage: `${config.savingsPercentage}%`,
         totalSaving: `${metrics.totalSaving.toFixed(1)}HKD`,
@@ -472,8 +606,8 @@ export async function GET() {
           latestCumulative: metrics.latestCumulative
         }
       }
-      
-      console.log(`✅ Using real energy data for ${user.name}`)
+
+      console.log(`✅ Using real energy data for ${user.name} with ${baseline ? baseline.regression.type : 'default'} baseline`)
     } else {
       // Use empty/minimal data for other users
       energyUsageData = {
