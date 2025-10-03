@@ -51,11 +51,13 @@ interface DashboardData {
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("month")
+  const [analyticsTab, setAnalyticsTab] = useState("current")
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [esgNews, setEsgNews] = useState<RssItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isNewsLoading, setIsNewsLoading] = useState(true)
   const [showCalculationInfo, setShowCalculationInfo] = useState<string | null>(null)
+  const [forecastData, setForecastData] = useState<{ labels: string[], values: number[] } | null>(null)
   const { user } = useUser()
   const currentDate = getCurrentFormattedDate()
   const isHuntUser = user?.name === "The Hunt"
@@ -90,9 +92,51 @@ export default function Dashboard() {
       }
     }
 
+    const fetchForecastData = async () => {
+      try {
+        // Map user to site ID
+        const siteMap: { [key: string]: string } = {
+          "The Hunt": "hunt",
+          "Weave Studio": "weave",
+          "Hai Sang": "haisang"
+        }
+        const siteId = siteMap[user?.name || ""] || "hunt"
+
+        const response = await fetch(`/api/bill-analysis?siteId=${siteId}`)
+        const data = await response.json()
+
+        if (data.success && data.data.monthlyBreakdown) {
+          // Generate forecast for next 12 months based on previous year data
+          const breakdown = data.data.monthlyBreakdown
+          const now = new Date()
+          const forecastLabels: string[] = []
+          const forecastValues: number[] = []
+
+          for (let i = 1; i <= 12; i++) {
+            const futureDate = new Date(now.getFullYear(), now.getMonth() + i, 1)
+            const month = futureDate.getMonth() + 1
+            const year = futureDate.getFullYear()
+
+            // Find matching month from previous year in breakdown
+            const matchingData = breakdown.find((row: any) => row.month === month)
+
+            forecastLabels.push(futureDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))
+            forecastValues.push(matchingData ? matchingData.totalKwh : 0)
+          }
+
+          setForecastData({ labels: forecastLabels, values: forecastValues })
+        }
+      } catch (error) {
+        console.error("Error fetching forecast data:", error)
+      }
+    }
+
     fetchData()
     fetchEsgNews()
-  }, [])
+    if (user) {
+      fetchForecastData()
+    }
+  }, [user])
 
   if (isLoading || !dashboardData) {
     return (
@@ -208,76 +252,128 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-semibold text-white">Energy Usage Analytics</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <span className="text-sm text-slate-300">Actual Usage (kWh)</span>
-                    </div>
-                    {/* Show baseline for real data users if available */}
-                    {isRealDataUser && dashboardData.energyUsage.baselineForecast?.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-white rounded-full"></div>
-                        <span className="text-sm text-slate-300">Baseline</span>
+                </div>
+
+                {/* Analytics Tabs */}
+                <Tabs value={analyticsTab} onValueChange={setAnalyticsTab} className="w-full">
+                  <TabsList className="bg-slate-700 w-full mb-4">
+                    <TabsTrigger value="current" className="data-[state=active]:bg-slate-600 flex-1">
+                      Current Usage
+                    </TabsTrigger>
+                    <TabsTrigger value="forecast" className="data-[state=active]:bg-slate-600 flex-1">
+                      12-Month Forecast
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Current Usage Tab */}
+                  {analyticsTab === "current" && (
+                    <div>
+                      <div className="flex items-center justify-end gap-4 mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <span className="text-sm text-slate-300">Actual Usage (kWh)</span>
+                        </div>
+                        {/* Show baseline for real data users if available */}
+                        {isRealDataUser && dashboardData.energyUsage.baselineForecast?.length > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-white rounded-full"></div>
+                            <span className="text-sm text-slate-300">Baseline</span>
+                          </div>
+                        )}
+                        {!isRealDataUser && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
+                              <span className="text-sm text-slate-300">Energy Forecast</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-white rounded-full"></div>
+                              <span className="text-sm text-slate-300">Baseline Forecast</span>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    )}
-                    {!isRealDataUser && (
-                      <>
+                      <div className="bg-slate-900/30 rounded-xl p-4">
+                        <LineChart
+                          className="h-64"
+                          data={{
+                            labels: dashboardData.energyUsage.labels,
+                            datasets: isRealDataUser
+                              ? [
+                                  {
+                                    label: "Actual Usage (kWh)",
+                                    data: dashboardData.energyUsage.actualUsage,
+                                    borderColor: "#3b82f6",
+                                    backgroundColor: "#3b82f6",
+                                  },
+                                  // Add baseline for real data users if available
+                                  ...(dashboardData.energyUsage.baselineForecast?.length > 0 ? [{
+                                    label: "Baseline",
+                                    data: dashboardData.energyUsage.baselineForecast,
+                                    borderColor: "#ffffff",
+                                    backgroundColor: "#ffffff",
+                                  }] : [])
+                                ]
+                              : [
+                                  {
+                                    label: "Actual Usage (kWh)",
+                                    data: dashboardData.energyUsage.actualUsage,
+                                    borderColor: "#3b82f6",
+                                    backgroundColor: "#3b82f6",
+                                  },
+                                  {
+                                    label: "Energy Forecast",
+                                    data: dashboardData.energyUsage.energyForecast,
+                                    borderColor: "#ec4899",
+                                    backgroundColor: "#ec4899",
+                                  },
+                                  {
+                                    label: "Baseline Forecast",
+                                    data: dashboardData.energyUsage.baselineForecast,
+                                    borderColor: "#ffffff",
+                                    backgroundColor: "#ffffff",
+                                  },
+                                ],
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Forecast Tab */}
+                  {analyticsTab === "forecast" && (
+                    <div>
+                      <div className="flex items-center justify-end gap-4 mb-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
-                          <span className="text-sm text-slate-300">Energy Forecast</span>
+                          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                          <span className="text-sm text-slate-300">Forecasted Usage (kWh)</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-white rounded-full"></div>
-                          <span className="text-sm text-slate-300">Baseline Forecast</span>
+                      </div>
+                      {forecastData ? (
+                        <div className="bg-slate-900/30 rounded-xl p-4">
+                          <LineChart
+                            className="h-64"
+                            data={{
+                              labels: forecastData.labels,
+                              datasets: [
+                                {
+                                  label: "Forecasted Usage (kWh)",
+                                  data: forecastData.values,
+                                  borderColor: "#a855f7",
+                                  backgroundColor: "#a855f7",
+                                },
+                              ],
+                            }}
+                          />
                         </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="bg-slate-900/30 rounded-xl p-4">
-                  <LineChart
-                    className="h-64"
-                    data={{
-                      labels: dashboardData.energyUsage.labels,
-                      datasets: isRealDataUser
-                        ? [
-                            {
-                              label: "Actual Usage (kWh)",
-                              data: dashboardData.energyUsage.actualUsage,
-                              borderColor: "#3b82f6",
-                              backgroundColor: "#3b82f6",
-                            },
-                            // Add baseline for real data users if available
-                            ...(dashboardData.energyUsage.baselineForecast?.length > 0 ? [{
-                              label: "Baseline",
-                              data: dashboardData.energyUsage.baselineForecast,
-                              borderColor: "#ffffff",
-                              backgroundColor: "#ffffff",
-                            }] : [])
-                          ]
-                        : [
-                            {
-                              label: "Actual Usage (kWh)",
-                              data: dashboardData.energyUsage.actualUsage,
-                              borderColor: "#3b82f6",
-                              backgroundColor: "#3b82f6",
-                            },
-                            {
-                              label: "Energy Forecast",
-                              data: dashboardData.energyUsage.energyForecast,
-                              borderColor: "#ec4899",
-                              backgroundColor: "#ec4899",
-                            },
-                            {
-                              label: "Baseline Forecast",
-                              data: dashboardData.energyUsage.baselineForecast,
-                              borderColor: "#ffffff",
-                              backgroundColor: "#ffffff",
-                            },
-                          ],
-                    }}
-                  />
-                </div>
+                      ) : (
+                        <div className="bg-slate-900/30 rounded-xl p-4 flex items-center justify-center h-64">
+                          <p className="text-slate-400">No forecast data available. Please analyze bill data in Super Admin first.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Tabs>
               </CardContent>
             </Card>
           </div>
