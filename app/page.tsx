@@ -106,13 +106,13 @@ export default function Dashboard() {
         const data = await response.json()
 
         if (data.success && data.data.monthlyBreakdown) {
-          // Generate forecast for next 12 months based on previous year data
+          // Generate forecast from previous month to 12 months ahead
           const breakdown = data.data.monthlyBreakdown
           const now = new Date()
           const forecastLabels: string[] = []
           const forecastValues: number[] = []
 
-          for (let i = 1; i <= 12; i++) {
+          for (let i = -1; i <= 10; i++) {
             const futureDate = new Date(now.getFullYear(), now.getMonth() + i, 1)
             const month = futureDate.getMonth() + 1
             const year = futureDate.getFullYear()
