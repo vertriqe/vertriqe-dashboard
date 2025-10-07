@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { API_CONFIG } from "@/lib/api-config"
 
 // Generate mock data for development when external API is down
 function generateMockData(requestBody: any) {
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Make request to the TSDB API
-    const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb", {
+    const response = await fetch(API_CONFIG.TSDB.BASE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

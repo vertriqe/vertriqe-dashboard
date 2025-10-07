@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getWeaveDashboardSensors } from "@/lib/sensor-config"
+import { API_CONFIG } from "@/lib/api-config"
 
 interface TSDBDataPoint {
   key: string
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const timeRange = searchParams.get('timeRange') || '30days' // default to 30 days
-    
+
     // Define time ranges in seconds
     const timeRanges: Record<string, { seconds: number, downsampling: number }> = {
       '24hours': { seconds: 86400, downsampling: 3600 },
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
       '30days': { seconds: 2592000, downsampling: 86400 },
       '12months': { seconds: 31536000, downsampling: 2592000 }
     }
-    
+
     const selectedRange = timeRanges[timeRange] || timeRanges['30days']
     const now = Math.floor(Date.now() / 1000)
     const startTimestamp = now - selectedRange.seconds
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb", {
+      const response = await fetch(API_CONFIG.TSDB.BASE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

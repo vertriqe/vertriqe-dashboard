@@ -35,6 +35,8 @@ ChartJS.register(
   LineController
 )
 
+import { getTsdbUrl } from "@/lib/api-config"
+
 interface DataPoint {
   timestamp: number
   energy: number
@@ -111,7 +113,7 @@ export default function SuperAdminPage() {
   // Fetch TSDB configuration
   const fetchTsdbConfig = async () => {
     try {
-      const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+      const response = await fetch(getTsdbUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

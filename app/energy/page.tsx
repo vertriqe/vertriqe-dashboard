@@ -13,6 +13,7 @@ import { getLogoForUser } from "@/lib/logo-utils"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
 import { useUser } from "@/contexts/user-context"
 import { getSensorsByOwner, ACCUMULATED_SENSOR_MAPPING } from "@/lib/sensor-config"
+import { getTsdbUrl } from "@/lib/api-config"
 // Weather data will be fetched via API instead of direct import
 
 interface TSDBDataPoint {
@@ -135,7 +136,7 @@ export default function EnergyDashboard() {
   // Fetch TSDB configuration
   const fetchTsdbConfig = async () => {
     try {
-      const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+      const response = await fetch(getTsdbUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

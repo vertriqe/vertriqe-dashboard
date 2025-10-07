@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { API_CONFIG } from "@/lib/api-config"
 
 interface TSDBDataPoint {
   key: string
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb", {
+      const response = await fetch(API_CONFIG.TSDB.BASE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

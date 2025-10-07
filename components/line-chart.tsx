@@ -15,6 +15,9 @@ interface LineChartProps {
       borderColor: string
       backgroundColor: string
       tension?: number
+      showLine?: boolean
+      pointRadius?: number
+      pointHoverRadius?: number
     }[]
   }
   className?: string

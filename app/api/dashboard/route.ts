@@ -9,6 +9,8 @@ import {
   type WeatherLocation,
 } from "@/lib/weather-service"
 import { getWeaveDashboardSensors, getHuntCumulativeSensors } from "@/lib/sensor-config"
+import { fetchTsdbConfig, getKeyConfig } from "@/lib/tsdb-config"
+import { getTsdbUrl, API_CONFIG } from "@/lib/api-config"
 
 interface EnergyConfig {
   savingsPercentage: number
@@ -88,7 +90,7 @@ async function generateBaselineForecast(
     const startTime = timestamps[0]
     const endTime = timestamps[timestamps.length - 1]
 
-    const tempResponse = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+    const tempResponse = await fetch(getTsdbUrl(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -158,67 +160,11 @@ async function generateBaselineForecast(
   }
 }
 
-async function fetchTsdbConfig() {
-  try {
-    // Check Redis cache first
-    const cachedConfig = await redis.get("tsdb_config")
-    if (cachedConfig) {
-      console.log("✅ Using cached TSDB config")
-      return JSON.parse(cachedConfig as string)
-    }
-
-    console.log("🔧 Fetching TSDB config from API...")
-    const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ operation: "getapiurlconfig" })
-    })
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch TSDB config")
-    }
-
-    const config = await response.json()
-    
-    // Cache for 1 hour
-    await redis.set("tsdb_config", JSON.stringify(config), 3600)
-    
-    console.log("✅ TSDB config fetched and cached")
-    return config
-  } catch (error) {
-    console.error("Error fetching TSDB config:", error)
-    return null
-  }
-}
-
-function getKeyConfig(key: string, tsdbConfig: any) {
-  if (!tsdbConfig || !tsdbConfig.success) return { multiplier: 1, unit: "A", offset: 0 }
-
-  // Find matching pattern in config
-  for (const pattern in tsdbConfig.data.multipliers) {
-    const regex = new RegExp(pattern.replace('*', '.*'))
-    if (regex.test(key)) {
-      return {
-        multiplier: tsdbConfig.data.multipliers[pattern] || 1,
-        unit: tsdbConfig.data.units[pattern] || "A",
-        offset: tsdbConfig.data.offsets[pattern] || 0
-      }
-    }
-  }
-  return { multiplier: 1, unit: "A", offset: 0 }
-}
-
 async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
   try {
     // Check Redis cache first (30 minutes TTL)
     const cacheKey = "hunt_sensor_data"
     const cachedData = await redis.get(cacheKey)
-    if (false) {
-      console.log("✅ Using cached Hunt sensor data")
-      return JSON.parse(cachedData as string)
-    }
 
     console.log("🔧 Fetching fresh Hunt sensor data...")
     
@@ -244,7 +190,7 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
         }
       }
 
-      const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb", {
+      const response = await fetch(API_CONFIG.TSDB.BASE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -315,10 +261,6 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
     // Check Redis cache first (30 minutes TTL)
     const cacheKey = "weave_sensor_data"
     const cachedData = await redis.get(cacheKey)
-    if (false) {
-      console.log("✅ Using cached Weave Studio sensor data")
-      return JSON.parse(cachedData as string)
-    }
 
     console.log("🔧 Fetching fresh Weave Studio sensor data...")
     
@@ -346,7 +288,7 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
 
 
 
-      const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+      const response = await fetch(getTsdbUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -398,7 +340,6 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
     // Cache for 30 minutes
     await redis.set(cacheKey, JSON.stringify(aggregatedData), 30 * 60)
     
-    console.log(`✅ Weave Studio sensor data fetched: ${aggregatedData.length} data points`)
     return aggregatedData
   } catch (error) {
     console.error("Error fetching Weave Studio sensor data:", error)
@@ -549,9 +490,7 @@ export async function GET() {
 
     let weatherData
     if (currentWeatherData) {
-      console.log("✅ Successfully fetched weather data, processing...")
       weatherData = processWeatherData(currentWeatherData)
-      console.log("✅ Using real weather data for dashboard")
     } else {
       console.log("❌ Failed to fetch weather data, using dummy data")
       weatherData = getDummyWeatherData()
@@ -624,7 +563,6 @@ export async function GET() {
         energySaved: "0kWh",
       }
       
-      console.log("✅ Using minimal energy data for other users")
     }
 
     const dashboardData = {
@@ -634,7 +572,6 @@ export async function GET() {
       userName: user.name
     }
 
-    console.log("✅ Dashboard data prepared successfully")
     return NextResponse.json(dashboardData)
   } catch (error) {
     console.error("❌ Dashboard API error:", error)

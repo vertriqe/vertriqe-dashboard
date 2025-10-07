@@ -3,33 +3,8 @@ import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { redis } from "@/lib/redis"
 import { fetchWeatherData, processWeatherData, type WeatherLocation } from "@/lib/weather-service"
-
-interface TSDBDataPoint {
-  key: string
-  timestamp: number
-  value: number
-}
-
-interface TSDBResponse {
-  success: boolean
-  data: {
-    success: boolean
-    data: TSDBDataPoint[]
-    read_query_params: {
-      lastx: number
-      aggregation: string
-    }
-  }
-}
-
-interface TSDBConfig {
-  success: boolean
-  data: {
-    multipliers: Record<string, number>
-    units: Record<string, string>
-    offsets: Record<string, number>
-  }
-}
+import { fetchTsdbConfig, getKeyConfig, type TSDBDataPoint, type TSDBResponse, type TSDBConfig } from "@/lib/tsdb-config"
+import { getTsdbUrl } from "@/lib/api-config"
 
 async function getUserFromToken(): Promise<string | null> {
   try {
@@ -50,43 +25,6 @@ async function getUserFromToken(): Promise<string | null> {
   }
 }
 
-async function fetchTsdbConfig(): Promise<TSDBConfig | null> {
-  try {
-    const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ operation: "getapiurlconfig" })
-    })
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch TSDB config")
-    }
-
-    return await response.json()
-  } catch (error) {
-    console.error("Error fetching TSDB config:", error)
-    return null
-  }
-}
-
-function getKeyConfig(key: string, tsdbConfig: TSDBConfig | null) {
-  if (!tsdbConfig) return { multiplier: 1, unit: "", offset: 0 }
-
-  for (const pattern in tsdbConfig.data.multipliers) {
-    const regex = new RegExp(pattern.replace('*', '.*'))
-    if (regex.test(key)) {
-      return {
-        multiplier: tsdbConfig.data.multipliers[pattern] || 1,
-        unit: tsdbConfig.data.units[pattern] || "",
-        offset: tsdbConfig.data.offsets[pattern] || 0
-      }
-    }
-  }
-  return { multiplier: 1, unit: "", offset: 0 }
-}
-
 async function fetchSensorData(sensorKey: string): Promise<{ value: number; timestamp: number } | null> {
   try {
     const now = Math.floor(Date.now() / 1000)
@@ -100,7 +38,7 @@ async function fetchSensorData(sensorKey: string): Promise<{ value: number; time
       }
     }
 
-    const response = await fetch("https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556", {
+    const response = await fetch(getTsdbUrl(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

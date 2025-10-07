@@ -25,3 +25,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+converted.csv
+convert_csv.js
+76c00ddc6b482d1034cef7efe8b4a3bf.csv
+electric_bill_and_temp.tsv

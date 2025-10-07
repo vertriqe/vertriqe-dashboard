@@ -57,7 +57,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [isNewsLoading, setIsNewsLoading] = useState(true)
   const [showCalculationInfo, setShowCalculationInfo] = useState<string | null>(null)
-  const [forecastData, setForecastData] = useState<{ labels: string[], values: number[] } | null>(null)
+  const [forecastData, setForecastData] = useState<{ labels: string[], values: number[], previousActual: number | null } | null>(null)
   const { user } = useUser()
   const currentDate = getCurrentFormattedDate()
   const isHuntUser = user?.name === "The Hunt"
@@ -111,11 +111,11 @@ export default function Dashboard() {
           const now = new Date()
           const forecastLabels: string[] = []
           const forecastValues: number[] = []
+          let previousActual: number | null = null
 
           for (let i = -1; i <= 10; i++) {
             const futureDate = new Date(now.getFullYear(), now.getMonth() + i, 1)
             const month = futureDate.getMonth() + 1
-            const year = futureDate.getFullYear()
 
             // Find matching month from previous year in breakdown
             const matchingData = breakdown.find((row: any) => row.month === month)
@@ -124,7 +124,19 @@ export default function Dashboard() {
             forecastValues.push(matchingData ? matchingData.totalKwh : 0)
           }
 
-          setForecastData({ labels: forecastLabels, values: forecastValues })
+          // Fetch actual usage from backend API for previous month
+          try {
+            const usageResponse = await fetch("/api/previous-month-usage")
+            const usageData = await usageResponse.json()
+
+            if (usageData.success && usageData.usage) {
+              previousActual = usageData.usage[0].value
+            }
+          } catch (error) {
+            console.error("Error fetching previous month usage:", error)
+          }
+
+          setForecastData({ labels: forecastLabels, values: forecastValues, previousActual })
         }
       } catch (error) {
         console.error("Error fetching forecast data:", error)
@@ -343,11 +355,21 @@ export default function Dashboard() {
                   {/* Forecast Tab */}
                   {analyticsTab === "forecast" && (
                     <div>
-                      <div className="flex items-center justify-end gap-4 mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                          <span className="text-sm text-slate-300">Forecasted Usage (kWh)</span>
+                      <div className="flex items-center justify-end gap-3 mb-4">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 bg-purple-500 rounded-full"></div>
+                          <span className="text-xs text-slate-300">Forecasted Usage (kWh)</span>
                         </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-slate-300">Forecasted Usage After Saving</span>
+                        </div>
+                        {forecastData?.previousActual && (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
+                            <span className="text-xs text-slate-300">Previous Month Actual</span>
+                          </div>
+                        )}
                       </div>
                       {forecastData ? (
                         <div className="bg-slate-900/30 rounded-xl p-4">
@@ -362,6 +384,21 @@ export default function Dashboard() {
                                   borderColor: "#a855f7",
                                   backgroundColor: "#a855f7",
                                 },
+                                {
+                                  label: "Forecasted Usage After Saving",
+                                  data: forecastData.values.map(value => value * 0.85),
+                                  borderColor: "#22c55e",
+                                  backgroundColor: "#22c55e",
+                                },
+                                ...(forecastData.previousActual ? [{
+                                  label: "Previous Month Actual",
+                                  data: [forecastData.previousActual, ...Array(forecastData.values.length - 1).fill(null)],
+                                  borderColor: "#3b82f6",
+                                  backgroundColor: "#3b82f6",
+                                  showLine: false,
+                                  pointRadius: 6,
+                                  pointHoverRadius: 8,
+                                }] : []),
                               ],
                             }}
                           />
