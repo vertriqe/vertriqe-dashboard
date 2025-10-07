@@ -6,13 +6,6 @@ const useMemoryStorage = !process.env.REDIS_URL
 // In-memory storage for when Redis is not available
 const memoryStore = new Map<string, any>()
 
-if (useMemoryStorage) {
-  console.log("Using in-memory storage (Redis URL not set)")
-} else {
-  console.log("Using Redis Cloud")
-  console.log("Redis URL:", process.env.REDIS_URL?.replace(/:[^:]*@/, ':****@')) // Hide password in logs
-}
-
 // Create Redis instance only if we have proper Redis URL
 const redisInstance = useMemoryStorage
   ? null
@@ -159,7 +152,6 @@ const initializeStorage = async () => {
       lat: "22.32366",
       lon: "114.188835"
     }))
-    console.log("Location data set for Weave Studio")
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error("Error during storage initialization:", errorMessage)
@@ -180,7 +172,6 @@ const initializeStorage = async () => {
         lat: "22.32366", 
         lon: "114.188835"
       }))
-      console.log("Location data set for Weave Studio")
     } catch (locationError) {
       console.error("Failed to set Weave Studio location data:", locationError)
     }
@@ -188,4 +179,8 @@ const initializeStorage = async () => {
 }
 
 // Initialize on module load
-initializeStorage()
+// initializeStorage() // only enable this when you want to reset or ensure default users
+
+export { initializeStorage }
+
+export default redis
