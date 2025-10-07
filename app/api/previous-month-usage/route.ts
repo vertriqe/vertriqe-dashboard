@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { getTsdbUrl } from "@/lib/api-config"
 import { fetchTsdbConfig, processTsdbData } from "@/lib/tsdb-config"
+import { redis } from "@/lib/redis"
 
 async function getUserFromToken(): Promise<{ email: string; name: string } | null> {
   try {
@@ -110,6 +111,27 @@ export async function GET(_request: NextRequest) {
         point.value = point.value * 24 * 30; // Approximate number of hours in a month
       }
 
+      // Fetch non-AC usage from Redis (key: bill_analysis:weave:breakdown)
+      const breakdownKey = `bill_analysis:weave:breakdown`
+      const breakdownStr = await redis.get(breakdownKey)
+
+      if (breakdownStr) {
+        const monthlyBreakdown = JSON.parse(breakdownStr)
+        
+        // Add non-AC usage to each data point
+        for (let point of data) {
+          const pointDate = new Date(point.timestamp * 1000)
+          const monthKey = pointDate.getMonth() + 1
+          //console.log("monthKey: ", monthKey)
+          // Find matching month in breakdown
+          //console.log("monthlyBreakdown: ", monthlyBreakdown)
+          const monthData = monthlyBreakdown.find((m: any) => m.month === monthKey)
+          //console.log("monthData: ", Object.keys(monthData))
+          if (monthData) {
+            point.value = point.value + monthData["nonACKwh"]
+          }
+        }
+      }
 
       return NextResponse.json({ success: true, usage: data })
     } else {
