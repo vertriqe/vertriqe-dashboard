@@ -8,16 +8,19 @@ interface UserContextType {
     email: string
   } | null
   isLoading: boolean
+  isSuperAdmin: boolean
 }
 
 const UserContext = createContext<UserContextType>({
   user: null,
   isLoading: true,
+  isSuperAdmin: false,
 })
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -27,6 +30,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
         if (data.authenticated && data.user) {
           setUser(data.user)
+          setIsSuperAdmin(data.isSuperAdmin || false)
         }
       } catch (error) {
         console.error("Error fetching user:", error)
@@ -38,7 +42,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     fetchUser()
   }, [])
 
-  return <UserContext.Provider value={{ user, isLoading }}>{children}</UserContext.Provider>
+  return <UserContext.Provider value={{ user, isLoading, isSuperAdmin }}>{children}</UserContext.Provider>
 }
 
 export const useUser = () => useContext(UserContext)

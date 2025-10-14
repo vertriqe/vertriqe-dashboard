@@ -12,14 +12,9 @@ import Image from "next/image"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { user } = useUser()
+  const { user, isSuperAdmin } = useUser()
   const isHuntUser = user?.name === "The Hunt"
   const isWeaveUser = user?.name === "Weave Studio"
-  const [isLocalhost, setIsLocalhost] = useState(false)
-
-  useEffect(() => {
-    setIsLocalhost(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  }, [])
 
   const navItems = [
     {
@@ -63,7 +58,7 @@ export function Sidebar() {
       label: "Super Admin",
       isActive: pathname === "/super-admin",
       disabled: false,
-      showOnLocalhost: true,
+      showForSuperAdmin: true,
     },
   ]
 
@@ -79,8 +74,8 @@ export function Sidebar() {
         {navItems.map((item) => {
           const IconComponent = item.icon
 
-          // Hide localhost-only items when not on localhost
-          if (item.showOnLocalhost && !isLocalhost) {
+          // Hide super admin items when not in super admin mode
+          if (item.showForSuperAdmin && !isSuperAdmin) {
             return null
           }
 

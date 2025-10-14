@@ -30,6 +30,8 @@ interface PerformanceData {
     labels: string[]
     normalUsage: number[]
     otUsage: number[]
+    normalPercentage: number[]
+    otPercentage: number[]
     baseline: number[]
   }
   savingPercentage: {
@@ -159,11 +161,15 @@ export default function PerformancePage() {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-blue-500"></div>
-                    <span className="text-sm">Normal Usage (kWh)</span>
+                    <span className="text-sm">
+                      {activeTab === "week" ? "Normal Usage (%)" : "Normal Usage (kWh)"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-red-500"></div>
-                    <span className="text-sm">OT Usage</span>
+                    <span className="text-sm">
+                      {activeTab === "week" ? "OT Usage (%)" : "OT Usage"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-white"></div>
@@ -174,7 +180,18 @@ export default function PerformancePage() {
                   className="h-48 mt-4"
                   data={{
                     labels: performanceData.usageData.labels,
-                    datasets: [
+                    datasets: activeTab === "week" ? [
+                      {
+                        label: "Normal Usage (%)",
+                        data: performanceData.usageData.normalPercentage,
+                        backgroundColor: "#3b82f6",
+                      },
+                      {
+                        label: "OT Usage (%)",
+                        data: performanceData.usageData.otPercentage,
+                        backgroundColor: "#ef4444",
+                      },
+                    ] : [
                       {
                         label: "Normal Usage (kWh)",
                         data: performanceData.usageData.normalUsage,
@@ -188,6 +205,7 @@ export default function PerformancePage() {
                     ],
                   }}
                   baseline={performanceData.usageData.baseline}
+                  showPercentage={activeTab === "week"}
                 />
               </CardContent>
             </Card>

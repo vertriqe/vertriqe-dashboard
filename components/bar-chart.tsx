@@ -17,9 +17,10 @@ interface BarChartProps {
   }
   className?: string
   baseline?: number[]
+  showPercentage?: boolean
 }
 
-export function BarChart({ data, className, baseline }: BarChartProps) {
+export function BarChart({ data, className, baseline, showPercentage }: BarChartProps) {
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartInstanceRef = useRef<Chart | null>(null)
 
@@ -44,18 +45,19 @@ export function BarChart({ data, className, baseline }: BarChartProps) {
         scales: {
           y: {
             beginAtZero: true,
+            max: showPercentage ? 100 : undefined,
             grid: {
               color: "rgba(255, 255, 255, 0.1)",
             },
             ticks: {
               color: "rgba(255, 255, 255, 0.7)",
               callback: function(value: any) {
-                return value + ' kWh'
+                return showPercentage ? value + '%' : value + ' kWh'
               }
             },
             title: {
               display: true,
-              text: 'Energy Usage (kWh)',
+              text: showPercentage ? 'Usage Percentage (%)' : 'Energy Usage (kWh)',
               color: "rgba(255, 255, 255, 0.7)",
             },
             stacked: true,
@@ -127,7 +129,7 @@ export function BarChart({ data, className, baseline }: BarChartProps) {
         chartInstanceRef.current.destroy()
       }
     }
-  }, [data, baseline])
+  }, [data, baseline, showPercentage])
 
   return (
     <div className={cn("w-full", className)}>
