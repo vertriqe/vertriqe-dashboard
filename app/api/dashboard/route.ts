@@ -205,9 +205,22 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
       }
 
       const result = await response.json()
+      
+      // Handle both nested and flat response formats
+      let dataPoints = []
+      if (result.success) {
+        if (result.data.success && result.data.data) {
+          // Nested format: {success: true, data: {success: true, data: [...]}}
+          dataPoints = result.data.data
+        } else if (Array.isArray(result.data)) {
+          // Flat format: {success: true, data: [...]}
+          dataPoints = result.data
+        }
+      }
+      
       return {
         key: sensorKey,
-        data: result.success && result.data.success ? result.data.data : []
+        data: dataPoints
       }
     })
 
@@ -302,8 +315,21 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
       }
 
       const result = await response.json()
-      if (result.success && result.data.success && result.data.data.length > 0) {
-        const _result= result.data.data.map((point: any) => {
+      
+      // Handle both nested and flat response formats
+      let dataPoints = []
+      if (result.success) {
+        if (result.data.success && result.data.data) {
+          // Nested format: {success: true, data: {success: true, data: [...]}}
+          dataPoints = result.data.data
+        } else if (Array.isArray(result.data)) {
+          // Flat format: {success: true, data: [...]}
+          dataPoints = result.data
+        }
+      }
+      
+      if (dataPoints.length > 0) {
+        const _result = dataPoints.map((point: any) => {
           const config = getKeyConfig(sensorKey, tsdbConfig)
           return {
             timestamp: point.timestamp,
