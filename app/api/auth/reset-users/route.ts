@@ -22,11 +22,11 @@ export async function POST() {
     // Clear existing user data
     await redis.del("vertriqe_auth")
     
-    // Set the updated user list with Weave Studio
+    // Set the updated user list with all users
     const users = [
       {
         name: "Hai Sang",
-        email: "abby@abby.md", 
+        email: "abby@abby.md",
         password: "aassddff",
       },
       {
@@ -38,6 +38,11 @@ export async function POST() {
         name: "Weave Studio",
         email: "weave@vertriqe.com",
         password: "weave-vertriqe-2025!",
+      },
+      {
+        name: "About Coffee Jeju",
+        email: "coffee@vertriqe.com",
+        password: "coffee-jeju-2025!",
       }
     ]
     

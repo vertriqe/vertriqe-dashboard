@@ -5,6 +5,7 @@ import { redis } from "@/lib/redis"
 import { fetchWeatherData, processWeatherData, type WeatherLocation } from "@/lib/weather-service"
 import { fetchTsdbConfig, getKeyConfig, type TSDBDataPoint, type TSDBResponse, type TSDBConfig } from "@/lib/tsdb-config"
 import { getTsdbUrl } from "@/lib/api-config"
+import { getZonesByOwner } from "@/lib/sensor-config"
 
 async function getUserFromToken(): Promise<string | null> {
   try {
@@ -117,74 +118,8 @@ export async function GET() {
       currentUser = users.find((u: any) => u.email === userEmail)
     }
 
-    // Define zone sensors based on user
-    let zoneSensors = []
-    
-    if (currentUser?.name === "Weave Studio") {
-      // Weave Studio zones (3 areas)
-      zoneSensors = [
-        {
-          id: 1,
-          name: "AC 1",
-          tempSensor: "vertriqe_25245_amb_temp", // Placeholder for temperature sensor
-          humSensor: "vertriqe_25245_amb_hum",   // Placeholder for humidity sensor
-          savingModeEnabled: false,
-        },
-        {
-          id: 2,
-          name: "AC 2",
-          tempSensor: "vertriqe_25247_amb_temp", // Placeholder for temperature sensor
-          humSensor: "vertriqe_25247_amb_hum",   // Placeholder for humidity sensor
-          savingModeEnabled: false,
-        },
-        {
-          id: 3,
-          name: "Combined",
-          tempSensor: "vertriqe_25248_amb_temp", // Placeholder for temperature sensor
-          humSensor: "vertriqe_25248_amb_hum",   // Placeholder for humidity sensor
-          savingModeEnabled: false,
-        }
-      ]
-    } else {
-      // Default zones for The Hunt (5 areas)
-      zoneSensors = [
-        {
-          id: 1,
-          name: "Area 1",
-          tempSensor: "vertriqe_25114_amb_temp",
-          humSensor: "vertriqe_25114_amb_hum",
-          savingModeEnabled: false,
-        },
-        {
-          id: 2,
-          name: "Area 2", 
-          tempSensor: "vertriqe_25115_amb_temp",
-          humSensor: "vertriqe_25115_amb_hum",
-          savingModeEnabled: false,
-        },
-        {
-          id: 3,
-          name: "Area 3",
-          tempSensor: "vertriqe_25116_amb_temp",
-          humSensor: "vertriqe_25116_amb_hum",
-          savingModeEnabled: false,
-        },
-        {
-          id: 4,
-          name: "Area 4",
-          tempSensor: "vertriqe_25117_amb_temp",
-          humSensor: "vertriqe_25117_amb_hum",
-          savingModeEnabled: false,
-        },
-        {
-          id: 5,
-          name: "Area 5",
-          tempSensor: "vertriqe_25118_amb_temp",
-          humSensor: "vertriqe_25118_amb_hum",
-          savingModeEnabled: false,
-        }
-      ]
-    }
+    // Get zone sensors from centralized config based on user
+    const zoneSensors = getZonesByOwner(currentUser?.name || "The Hunt")
 
     // Fetch real weather data
     let weatherInfo

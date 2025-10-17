@@ -106,14 +106,19 @@ const getDefaultUsers = () => {
       password: "aassddff",
     },
     {
-      name: "The Hunt", 
+      name: "The Hunt",
       email: "hunt@vertriqe.com",
       password: "huntpass123",
     },
     {
       name: "Weave Studio",
-      email: "weave@vertriqe.com", 
+      email: "weave@vertriqe.com",
       password: "weave-vertriqe-2025!",
+    },
+    {
+      name: "About Coffee Jeju",
+      email: "coffee@vertriqe.com",
+      password: "coffee-jeju-2025!",
     }
   ]
 }
