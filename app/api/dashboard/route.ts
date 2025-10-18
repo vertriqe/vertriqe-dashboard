@@ -552,11 +552,12 @@ export async function GET() {
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })
       })
 
+
       energyUsageData = {
         labels: dateLabels.length > 0 ? dateLabels : ["No Data"],
-        actualUsage: sensorData.map(point => point.value), // Cumulative readings per day
+        actualUsage: metrics.actualUsage, // Always use processed sum (all five sensors for The Hunt)
         energyForecast: [], // Empty for real data users
-        baselineForecast: metrics.baselineForecast, // Generated from regression
+        baselineForecast: metrics.baselineForecast, // Always uses manual model if present
       }
 
       energySavingsData = {

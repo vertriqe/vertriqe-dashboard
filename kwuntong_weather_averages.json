@@ -1,0 +1,185 @@
+{
+  "monthlyAverages": [
+    {
+      "yearMonth": "2024-01",
+      "year": 2024,
+      "month": 1,
+      "averageTemp": 16.95,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2024-02",
+      "year": 2024,
+      "month": 2,
+      "averageTemp": 18.52,
+      "daysCount": 29
+    },
+    {
+      "yearMonth": "2024-03",
+      "year": 2024,
+      "month": 3,
+      "averageTemp": 20.17,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2024-04",
+      "year": 2024,
+      "month": 4,
+      "averageTemp": 25.55,
+      "daysCount": 30
+    },
+    {
+      "yearMonth": "2024-05",
+      "year": 2024,
+      "month": 5,
+      "averageTemp": 25.11,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2024-06",
+      "year": 2024,
+      "month": 6,
+      "averageTemp": 28.07,
+      "daysCount": 30
+    },
+    {
+      "yearMonth": "2024-07",
+      "year": 2024,
+      "month": 7,
+      "averageTemp": 29.51,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2024-08",
+      "year": 2024,
+      "month": 8,
+      "averageTemp": 29.49,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2024-09",
+      "year": 2024,
+      "month": 9,
+      "averageTemp": 28.68,
+      "daysCount": 30
+    },
+    {
+      "yearMonth": "2024-10",
+      "year": 2024,
+      "month": 10,
+      "averageTemp": 26.29,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2024-11",
+      "year": 2024,
+      "month": 11,
+      "averageTemp": 22.23,
+      "daysCount": 30
+    },
+    {
+      "yearMonth": "2024-12",
+      "year": 2024,
+      "month": 12,
+      "averageTemp": 17.74,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2025-01",
+      "year": 2025,
+      "month": 1,
+      "averageTemp": 16.25,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2025-02",
+      "year": 2025,
+      "month": 2,
+      "averageTemp": 16.3,
+      "daysCount": 28
+    },
+    {
+      "yearMonth": "2025-03",
+      "year": 2025,
+      "month": 3,
+      "averageTemp": 19.36,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2025-04",
+      "year": 2025,
+      "month": 4,
+      "averageTemp": 22.99,
+      "daysCount": 30
+    },
+    {
+      "yearMonth": "2025-05",
+      "year": 2025,
+      "month": 5,
+      "averageTemp": 26.39,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2025-06",
+      "year": 2025,
+      "month": 6,
+      "averageTemp": 28.23,
+      "daysCount": 30
+    },
+    {
+      "yearMonth": "2025-07",
+      "year": 2025,
+      "month": 7,
+      "averageTemp": 29.15,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2025-08",
+      "year": 2025,
+      "month": 8,
+      "averageTemp": 28.37,
+      "daysCount": 31
+    },
+    {
+      "yearMonth": "2025-09",
+      "year": 2025,
+      "month": 9,
+      "averageTemp": 28.43,
+      "daysCount": 30
+    }
+  ],
+  "yearlyAverages": [
+    {
+      "year": 2024,
+      "averageTemp": 24.03,
+      "daysCount": 366
+    },
+    {
+      "year": 2025,
+      "averageTemp": 24,
+      "daysCount": 273
+    }
+  ],
+  "seasonalAverages": [
+    {
+      "season": "Winter (Dec-Feb)",
+      "averageTemp": 17.15,
+      "daysCount": 150
+    },
+    {
+      "season": "Spring (Mar-May)",
+      "averageTemp": 23.25,
+      "daysCount": 184
+    },
+    {
+      "season": "Summer (Jun-Aug)",
+      "averageTemp": 28.81,
+      "daysCount": 184
+    },
+    {
+      "season": "Fall (Sep-Nov)",
+      "averageTemp": 26.41,
+      "daysCount": 121
+    }
+  ]
+}

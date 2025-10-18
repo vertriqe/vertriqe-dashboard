@@ -8,6 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` - Build production application
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint for code quality checks
+- `npm run db:setup` - Create Turso database tables
+- `npm run db:seed` - Seed sensor data from sensorTable.tsv
+- `npm run users:load` - Load default users into Redis/memory storage
 
 ## Architecture Overview
 
@@ -21,6 +24,7 @@ This is a Next.js 14 application using the App Router pattern with TypeScript. T
 
 ### Key Infrastructure
 - **Storage**: Redis Cloud with graceful fallback to in-memory storage
+- **Database**: Turso (libSQL) for sensor data storage
 - **Middleware**: JWT token verification in `middleware.ts`
 - **Context**: `UserProvider` in `contexts/user-context.tsx` for user state management
 - **Styling**: Tailwind CSS with shadcn/ui components
@@ -50,11 +54,15 @@ This is a Next.js 14 application using the App Router pattern with TypeScript. T
 - `JWT_SECRET` - JWT signing secret
 - `REDIS_URL` - Redis Cloud connection URL (optional, fallback to memory)
 - `DEFAULT_USERS` - JSON array of default test users with name, email, and password fields
+- `TURSO_DATABASE_URL` - Turso database URL (required for sensor data storage)
+- `TURSO_AUTH_TOKEN` - Turso authentication token (optional for local development)
 
 ### Default Test Users
 The application loads test users from the `DEFAULT_USERS` environment variable or falls back to:
 1. **Hai Sang** - `abby@abby.md` / `aassddff`
 2. **The Hunt** - `hunt@vertriqe.com` / `huntpass123`
+3. **Weave Studio** - `weave@vertriqe.com` / `weave-vertriqe-2025!`
+4. **About Coffee Jeju** - `coffee@vertriqe.com` / `coffee-jeju-2025!`
 
 ## Testing
 No specific test framework is configured. When adding tests, examine the codebase to determine the appropriate testing approach.

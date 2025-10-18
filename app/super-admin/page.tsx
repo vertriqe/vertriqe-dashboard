@@ -50,6 +50,8 @@ interface RegressionResult {
   intercept: number
   type: 'linear' | 'quadratic' | 'logarithmic'
   coefficients?: { a?: number, b?: number, c?: number }
+  // Marks if this regression was manually added by the user
+  isManual?: boolean
 }
 
 interface TSDBConfig {
@@ -86,11 +88,43 @@ export default function SuperAdminPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [hourlyTempData, setHourlyTempData] = useState<string>("")
+  // Manual model inputs
+  const [manualType, setManualType] = useState<'linear' | 'quadratic' | 'logarithmic'>('linear')
+  const [manualA, setManualA] = useState<string>("")
+  const [manualB, setManualB] = useState<string>("")
+  const [manualC, setManualC] = useState<string>("")
+  const [manualError, setManualError] = useState<string | null>(null)
+  // Remove all manually added regression curves
+  const clearManualCurves = () => {
+    setRegressions(prev => {
+      const kept = prev.filter(r => !r.isManual)
+      // Update selected index if it was pointing to a removed item
+      if (selectedRegressionIndex !== null) {
+        const selected = prev[selectedRegressionIndex]
+        if (selected?.isManual) {
+          setSelectedRegressionIndex(null)
+        } else {
+          // Recompute index among kept list
+          const newIndex = kept.findIndex(r => r === selected)
+          setSelectedRegressionIndex(newIndex >= 0 ? newIndex : null)
+        }
+      }
+      // Update best regression
+      const autos = kept.filter(r => !r.isManual)
+      if (autos.length > 0) {
+        const best = [...autos].sort((a, b) => b.rSquared - a.rSquared)[0]
+        setBestRegression(best)
+      } else {
+        setBestRegression(null)
+      }
+      return kept
+    })
+  }
 
   const sites = [
-    { value: "hunt", label: "The Hunt", energyKey: "vertriqe_25120_cttp", tempKey: "weather_thehunt_temp_c" },
-    { value: "weave", label: "Weave Studio", energyKey: "vertriqe_25245_weave", tempKey: "weather_thehunt_temp_c" },
-    { value: "haisang", label: "Hai Sang", energyKey: "vertriqe_24833_cttp", tempKey: "weather_thehunt_temp_c" }
+    { value: "hunt", label: "The Hunt", energyKey: ["vertriqe_25120_cctp","vertriqe_25121_cctp","vertriqe_25122_cctp","vertriqe_25123_cctp","vertriqe_25124_cctp"], tempKey: "weather_thehunt_temp_c" },
+    { value: "weave", label: "Weave Studio", energyKey: ["vertriqe_25245_weave"], tempKey: "weather_thehunt_temp_c" },
+    { value: "haisang", label: "Hai Sang", energyKey: ["vertriqe_24833_cctp"], tempKey: "weather_thehunt_temp_c" }
   ]
 
   // Function to get the appropriate multiplier, unit, and offset for a key
@@ -937,7 +971,11 @@ export default function SuperAdminPage() {
                           y: {
                             title: {
                               display: true,
-                              text: `Energy (${tsdbConfig ? getKeyConfig(sites.find(s => s.value === selectedSite)?.energyKey || "").unit || "kW" : "kW"})`,
+                              text: `Energy (${tsdbConfig ? (() => {
+                                const energyKey = sites.find(s => s.value === selectedSite)?.energyKey || ""
+                                const key = Array.isArray(energyKey) ? energyKey[0] : energyKey
+                                return getKeyConfig(key).unit || "kW"
+                              })() : "kW"})`,
                               color: 'white'
                             },
                             ticks: { color: 'white' },
@@ -956,6 +994,134 @@ export default function SuperAdminPage() {
                   <CardTitle className="text-white">Regression Results</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Manual Model Input */}
+                  <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-md space-y-3">
+                    <h4 className="font-semibold text-white">Manual Model</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                      <div className="md:col-span-2">
+                        <Label className="text-slate-300">Type</Label>
+                        <Select value={manualType} onValueChange={(v) => setManualType(v as any)}>
+                          <SelectTrigger className="bg-slate-700 border-slate-600">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-700 border-slate-600">
+                            <SelectItem value="linear">Linear (y = a x + b)</SelectItem>
+                            <SelectItem value="quadratic">Quadratic (y = a x² + b x + c)</SelectItem>
+                            <SelectItem value="logarithmic">Logarithmic (y = a*ln(x) + b)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">a</Label>
+                        <Input value={manualA} onChange={(e) => setManualA(e.target.value)} placeholder="a" className="bg-slate-700 border-slate-600" />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">b</Label>
+                        <Input value={manualB} onChange={(e) => setManualB(e.target.value)} placeholder="b" className="bg-slate-700 border-slate-600" />
+                      </div>
+                      {manualType === 'quadratic' && (
+                        <div>
+                          <Label className="text-slate-300">c</Label>
+                          <Input value={manualC} onChange={(e) => setManualC(e.target.value)} placeholder="c" className="bg-slate-700 border-slate-600" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        onClick={() => {
+                          if (data.length < 3) {
+                            setManualError('Need at least 3 data points to evaluate the model')
+                            return
+                          }
+                          const a = parseFloat(manualA || '0')
+                          const b = parseFloat(manualB || '0')
+                          const c = parseFloat(manualC || '0')
+                          const x = data.map(d => d.temperature)
+                          const y = data.map(d => d.energy)
+                          if (manualType === 'logarithmic' && !x.every(v => v > 0)) {
+                            setManualError('Logarithmic model requires all temperatures > 0')
+                            return
+                          }
+                          const n = y.length
+                          const yMean = y.reduce((s, v) => s + v, 0) / n
+                          const ssTot = y.reduce((s, yi) => s + Math.pow(yi - yMean, 2), 0)
+                          const predict = (val: number) => {
+                            if (manualType === 'linear') return a * val + b
+                            if (manualType === 'quadratic') return a * val * val + b * val + c
+                            // logarithmic
+                            return a * Math.log(val) + b
+                          }
+                          const ssRes = y.reduce((s, yi, i) => s + Math.pow(yi - predict(x[i]), 2), 0)
+                          const rSquared = 1 - (ssRes / ssTot)
+
+                          const equation = manualType === 'linear'
+                            ? `y = ${a.toFixed(6)}x + ${b.toFixed(6)}`
+                            : manualType === 'quadratic'
+                              ? `y = ${a.toFixed(6)}x² + ${b.toFixed(6)}x + ${c.toFixed(6)}`
+                              : `y = ${a.toFixed(6)}*ln(x) + ${b.toFixed(6)}`
+
+                          const reg: RegressionResult = manualType === 'quadratic' ? {
+                            equation,
+                            rSquared,
+                            slope: a,
+                            intercept: c,
+                            type: 'quadratic',
+                            coefficients: { a, b, c },
+                            isManual: true
+                          } : manualType === 'linear' ? {
+                            equation,
+                            rSquared,
+                            slope: a,
+                            intercept: b,
+                            type: 'linear',
+                            coefficients: { a, b },
+                            isManual: true
+                          } : {
+                            equation,
+                            rSquared,
+                            slope: a,
+                            intercept: b,
+                            type: 'logarithmic',
+                            coefficients: { a, b },
+                            isManual: true
+                          }
+
+                          const newList = [...regressions, reg]
+                          setRegressions(newList)
+                          setSelectedRegressionIndex(newList.length - 1)
+                          setManualError(null)
+                        }}
+                        disabled={data.length === 0}
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        Preview on Chart
+                      </Button>
+                      <Button
+                        onClick={clearManualCurves}
+                        type="button"
+                        variant="outline"
+                        className="border-slate-600"
+                        disabled={regressions.filter(r => r.isManual).length === 0}
+                      >
+                        Clear manual curves
+                      </Button>
+                      {selectedRegressionIndex !== null && (
+                        <Button
+                          onClick={saveBaseline}
+                          disabled={isSaving}
+                          variant="outline"
+                          className="border-slate-600"
+                        >
+                          Save as Baseline
+                        </Button>
+                      )}
+                    </div>
+                    {manualError && (
+                      <div className="p-2 text-sm rounded bg-red-900/40 border border-red-700 text-red-200">{manualError}</div>
+                    )}
+                    <p className="text-xs text-slate-400">Tip: Linear uses a (slope) and b (intercept). Quadratic uses a, b, c. Logarithmic uses a and b.</p>
+                  </div>
+
                   {regressions.length > 0 ? (
                     <>
                       {/* Best Fit Highlight */}
@@ -1082,7 +1248,11 @@ export default function SuperAdminPage() {
                   <div>
                     <p className="text-slate-400">Avg Energy</p>
                     <p className="text-2xl font-bold text-white">
-                      {(data.reduce((sum, p) => sum + p.energy, 0) / data.length).toFixed(2)} {tsdbConfig ? getKeyConfig(sites.find(s => s.value === selectedSite)?.energyKey || "").unit || "kW" : "kW"}
+                      {(data.reduce((sum, p) => sum + p.energy, 0) / data.length).toFixed(2)} {tsdbConfig ? (() => {
+                        const energyKey = sites.find(s => s.value === selectedSite)?.energyKey || ""
+                        const key = Array.isArray(energyKey) ? energyKey[0] : energyKey
+                        return getKeyConfig(key).unit || "kW"
+                      })() : "kW"}
                     </p>
                   </div>
                   <div>
@@ -1111,26 +1281,35 @@ export default function SuperAdminPage() {
       const start = Math.floor(new Date(startDate).getTime() / 1000)
       const end = Math.floor(new Date(endDate).getTime() / 1000)
 
-      // Fetch energy data
-      const energyResponse = await fetch("/api/tsdb", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-url": "http://35.221.150.154:5556"
-        },
-        body: JSON.stringify({
-          operation: "read",
-          key: site.energyKey,
-          Read: {
-            start_timestamp: start,
-            end_timestamp: end,
-            downsampling: 3600, // 1 hour
-            aggregation: "avg"
-          }
-        })
-      })
+  // Normalize energy keys to an array
+  const energyKeys: string[] = Array.isArray(site.energyKey) ? site.energyKey : [site.energyKey]
 
-      // Fetch temperature data
+      console.log("Fetching energy data for keys:", energyKeys)
+
+      // Fetch energy data for all keys (hourly max; we'll compute local-day max client-side)
+      const energyResponses = await Promise.all(
+        energyKeys.map((key: string) =>
+          fetch("/api/tsdb", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-url": "http://35.221.150.154:5556"
+            },
+            body: JSON.stringify({
+              operation: "read",
+              key: key,
+              Read: {
+                start_timestamp: start,
+                end_timestamp: end,
+                downsampling: 3600, // 1 hour
+                aggregation: "max"
+              }
+            })
+          })
+        )
+      )
+
+      // Fetch temperature data (hourly average; we'll compute local-day avg client-side)
       const tempResponse = await fetch("/api/tsdb", {
         method: "POST",
         headers: {
@@ -1149,57 +1328,69 @@ export default function SuperAdminPage() {
         })
       })
 
-      const energyData = await energyResponse.json()
+      // Parse all energy responses
+      const energyDataArray = await Promise.all(energyResponses.map((r: Response) => r.json()))
       const tempData = await tempResponse.json()
 
-      console.log("Energy data response:", energyData)
+      console.log("Energy data responses:", energyDataArray)
       console.log("Temperature data response:", tempData)
 
-      if (!energyData.success || !tempData.success) {
+      // Check if all requests succeeded
+      if (energyDataArray.some((d: any) => !d.success) || !tempData.success) {
         throw new Error("Failed to fetch data from TSDB")
       }
 
-      // Combine data by timestamp with tolerance
-      const combined: DataPoint[] = []
-      const energyPoints = energyData.data?.data || []
-      const tempPoints = tempData.data?.data || []
+      // Helper: local day start (bucket by browser/local timezone)
+      const getLocalDayStart = (tsSec: number) => {
+        const d = new Date(tsSec * 1000)
+        d.setHours(0, 0, 0, 0)
+        return Math.floor(d.getTime() / 1000)
+      }
 
-      console.log("Energy points:", energyPoints.length)
-      console.log("Temperature points:", tempPoints.length)
-
-      // Get configuration for energy and temperature keys
-      const energyConfig = getKeyConfig(site.energyKey)
-      const tempConfig = getKeyConfig(site.tempKey)
-
-      console.log("Energy config:", energyConfig)
-      console.log("Temperature config:", tempConfig)
-
-      // Sort both arrays by timestamp for easier matching
-      energyPoints.sort((a: any, b: any) => a.timestamp - b.timestamp)
-      tempPoints.sort((a: any, b: any) => a.timestamp - b.timestamp)
-
-      // Match with tolerance (within 30 minutes = 1800 seconds)
-      const tolerance = 1800
-
-      energyPoints.forEach((energyPoint: any) => {
-        const tempPoint = tempPoints.find((tp: any) =>
-          Math.abs(tp.timestamp - energyPoint.timestamp) <= tolerance
-        )
-        if (tempPoint && energyPoint.value != null && tempPoint.value != null) {
-          // Apply multipliers and offsets
-          const processedEnergy = energyPoint.value * energyConfig.multiplier + energyConfig.offset
-          const processedTemp = tempPoint.value * tempConfig.multiplier + tempConfig.offset
-
-          combined.push({
-            timestamp: energyPoint.timestamp,
-            energy: processedEnergy,
-            temperature: processedTemp
-          })
-        }
+      // Build daily energy sums applying per-key multipliers/offsets
+      const energyByDay = new Map<number, number>() // dayStartTs -> kWh sum
+      energyDataArray.forEach((energyData: any, idx: number) => {
+        const key = energyKeys[idx]
+        const keyConfig = getKeyConfig(key)
+        const points = energyData.data?.data || []
+        console.log(`[DEBUG] Energy key ${key} (${points.length} points), keyConfig:`, keyConfig)
+        // For cumulative daily-reset meters, use the max reading within the local day.
+        const perDayMax = new Map<number, number>()
+        points.forEach((pt: any) => {
+          const day = getLocalDayStart(pt.timestamp)
+          const processed = (pt.value ?? 0) * keyConfig.multiplier + keyConfig.offset
+          const prev = perDayMax.get(day) ?? 0
+          if (processed > prev) perDayMax.set(day, processed)
+        })
+        // Add this key's per-day maxima into the overall daily sum (sum across keys)
+        perDayMax.forEach((val, day) => {
+          energyByDay.set(day, (energyByDay.get(day) || 0) + val)
+        })
       })
 
-      console.log("Combined data points:", combined.length)
-      console.log("Sample combined data:", combined.slice(0, 3))
+      // Build daily temperature averages applying multipliers/offsets
+      const tempConfig = getKeyConfig(site.tempKey)
+      const tempPoints = tempData.data?.data || []
+      const tempAgg = new Map<number, { sum: number; count: number }>()
+      tempPoints.forEach((pt: any) => {
+        const day = getLocalDayStart(pt.timestamp)
+        const processed = (pt.value ?? 0) * tempConfig.multiplier + tempConfig.offset
+        const cur = tempAgg.get(day) || { sum: 0, count: 0 }
+        cur.sum += processed
+        cur.count += 1
+        tempAgg.set(day, cur)
+      })
+
+      // Join on common days and produce combined datapoints
+      const commonDays = Array.from(energyByDay.keys()).filter(d => tempAgg.has(d)).sort((a, b) => a - b)
+      const combined: DataPoint[] = commonDays.map(day => ({
+        timestamp: day,
+        energy: energyByDay.get(day) || 0,
+        temperature: (tempAgg.get(day)!.sum / tempAgg.get(day)!.count)
+      }))
+
+      console.log(`[DEBUG] Combined daily points: ${combined.length}`)
+      console.log(`[DEBUG] Sample combined data:`, combined.slice(0, 3))
 
       setData(combined)
       setRegressions([]) // Reset regressions when new data is loaded
@@ -1245,7 +1436,8 @@ export default function SuperAdminPage() {
       slope,
       intercept,
       type: 'linear',
-      coefficients: { a: slope, b: intercept }
+      coefficients: { a: slope, b: intercept },
+      isManual: false
     })
 
     // 2. Quadratic Regression: y = ax² + bx + c
@@ -1318,7 +1510,8 @@ export default function SuperAdminPage() {
           slope: a, // Primary coefficient
           intercept: c,
           type: 'quadratic',
-          coefficients: { a, b, c }
+          coefficients: { a, b, c },
+          isManual: false
         })
       }
     } catch (error) {
@@ -1346,7 +1539,8 @@ export default function SuperAdminPage() {
         slope: slopeLog,
         intercept: interceptLog,
         type: 'logarithmic',
-        coefficients: { a: slopeLog, b: interceptLog }
+        coefficients: { a: slopeLog, b: interceptLog },
+        isManual: false
       })
     }
 
