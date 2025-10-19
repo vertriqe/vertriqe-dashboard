@@ -126,7 +126,7 @@ export async function GET() {
     const currentWeatherData = await fetchWeatherData(userLocation.lat, userLocation.lon)
 
     if (currentWeatherData) {
-      const processedData = processWeatherData(currentWeatherData)
+      const processedData = processWeatherData(currentWeatherData, userLocation.name)
       weatherInfo = {
         condition: processedData.forecast.condition,
         range: processedData.forecast.range,

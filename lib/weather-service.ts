@@ -147,7 +147,6 @@ export async function fetchWeatherData(lat: string, lon: string): Promise<Weathe
 
     // Cache the data in Redis with TTL
     await redis.set(cacheKey, JSON.stringify(data), CACHE_TTL)
-
     return data
   } catch (error) {
     console.error("❌ Error fetching current weather data:", error)
@@ -155,7 +154,7 @@ export async function fetchWeatherData(lat: string, lon: string): Promise<Weathe
   }
 }
 
-export function processWeatherData(currentData: WeatherData): ProcessedWeatherData {
+export function processWeatherData(currentData: WeatherData, locationNameOverride?: string): ProcessedWeatherData {
   console.log("🔄 Processing weather data...")
 
   const { location, current } = currentData
@@ -169,9 +168,9 @@ export function processWeatherData(currentData: WeatherData): ProcessedWeatherDa
   // Generate weekly weather using current conditions (no forecast data)
   const weeklyWeather = []
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-  
+
   console.log("📊 Generating weekly weather using current conditions")
-  
+
   for (let i = 0; i < 6; i++) {
     const today = new Date()
     today.setDate(today.getDate() + i)
@@ -188,6 +187,10 @@ export function processWeatherData(currentData: WeatherData): ProcessedWeatherDa
   const tempRange = `${Math.round(current.temp_c - 2)}/${Math.round(current.temp_c + 2)}°C`
   console.log(`🌡️ Using estimated temperature range: ${tempRange}`)
 
+  // Use override name if provided, otherwise use API's location name
+  const displayName = locationNameOverride || location.name
+  console.log(`📍 Using location name: ${displayName}${locationNameOverride ? ' (overridden from Redis)' : ' (from API)'}`)
+
   const processedData = {
     currentTemperature: `${Math.round(current.temp_c)}°C`,
     forecast: {
@@ -200,7 +203,7 @@ export function processWeatherData(currentData: WeatherData): ProcessedWeatherDa
       }),
     },
     weatherLocation: {
-      name: location.name,
+      name: displayName,
       description: getWeatherDescription(current.condition.text, current.temp_c),
       condition: current.condition.text,
       temperature: `${Math.round(current.temp_c)}°C`,

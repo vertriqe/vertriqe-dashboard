@@ -157,6 +157,13 @@ const initializeStorage = async () => {
       lat: "22.32366",
       lon: "114.188835"
     }))
+
+    // Set user location data for About Coffee Jeju
+    await redis.set("user_location:coffee@vertriqe.com", JSON.stringify({
+      name: "Jeju",
+      lat: "33.4890",
+      lon: "126.4983"
+    }))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error("Error during storage initialization:", errorMessage)
@@ -174,17 +181,28 @@ const initializeStorage = async () => {
     try {
       await redis.set("user_location:weave@vertriqe.com", JSON.stringify({
         name: "To Kwa Wan",
-        lat: "22.32366", 
+        lat: "22.32366",
         lon: "114.188835"
       }))
     } catch (locationError) {
       console.error("Failed to set Weave Studio location data:", locationError)
     }
+
+    // Still try to set location data for About Coffee Jeju
+    try {
+      await redis.set("user_location:coffee@vertriqe.com", JSON.stringify({
+        name: "Jeju",
+        lat: "33.4890",
+        lon: "126.4983"
+      }))
+    } catch (locationError) {
+      console.error("Failed to set About Coffee Jeju location data:", locationError)
+    }
   }
 }
 
 // Initialize on module load
-// initializeStorage() // only enable this when you want to reset or ensure default users
+initializeStorage() // only enable this when you want to reset or ensure default users
 
 export { initializeStorage }
 

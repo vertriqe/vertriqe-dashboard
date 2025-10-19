@@ -516,7 +516,8 @@ export async function GET() {
 
     let weatherData
     if (currentWeatherData) {
-      weatherData = processWeatherData(currentWeatherData)
+      // Pass the location name from Redis to override the Weather API's location name
+      weatherData = processWeatherData(currentWeatherData, userLocation.name)
     } else {
       console.log("❌ Failed to fetch weather data, using dummy data")
       weatherData = getDummyWeatherData()

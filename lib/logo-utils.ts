@@ -13,7 +13,7 @@ export function getLogoForUser(userEmail?: string): {
       alt: 'Weave Studio Logo'
     },
     'coffee@vertriqe.com': {
-      src: 'https://placehold.co/10x10/png?text=Coffee&font=roboto',
+      src: '/images/about-coffee-logo.png',
       alt: 'Empty Image Placeholder'
     },
     // Default fallback for all other users

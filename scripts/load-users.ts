@@ -39,6 +39,22 @@ async function loadUsers() {
       console.log(`  - ${user.name} (${user.email})`)
     })
 
+    // Set location data for Weave Studio
+    await redis.set("user_location:weave@vertriqe.com", JSON.stringify({
+      name: "To Kwa Wan",
+      lat: "22.32366",
+      lon: "114.188835"
+    }))
+    console.log("\n✓ Location set for Weave Studio (To Kwa Wan)")
+
+    // Set location data for About Coffee Jeju
+    await redis.set("user_location:coffee@vertriqe.com", JSON.stringify({
+      name: "Jeju",
+      lat: "33.4890",
+      lon: "126.4983"
+    }))
+    console.log("✓ Location set for About Coffee Jeju (Jeju)")
+
     // Verify
     const storedData = await redis.get("vertriqe_auth")
     if (storedData) {

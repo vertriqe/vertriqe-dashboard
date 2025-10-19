@@ -230,7 +230,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg text-white">
-                    {isHuntUser ? "Kwun Tong" : isWeaveStudioUser ? "To Kwa Wan" : dashboardData.weatherLocation.name}
+                    {dashboardData.weatherLocation.name}
                   </h3>
                   <p className="text-slate-300 mt-1">{dashboardData.weatherLocation.description}</p>
                   <div className="mt-3 flex items-center gap-2">
