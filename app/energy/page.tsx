@@ -185,15 +185,6 @@ export default function EnergyDashboard() {
     }
   }
 
-  // For The Hunt, use all five cctp sensors
-  const HUNT_KEYS = [
-    "vertriqe_25120_cctp",
-    "vertriqe_25121_cctp",
-    "vertriqe_25122_cctp",
-    "vertriqe_25123_cctp",
-    "vertriqe_25124_cctp"
-  ]
-
   // Fetch baseline regression for thehunt
   useEffect(() => {
     if (user?.name === "The Hunt") {
@@ -215,77 +206,6 @@ export default function EnergyDashboard() {
       const timeRange = timeRanges[activeTab as keyof typeof timeRanges]
       const startTimestamp = now - timeRange.seconds
 
-      // If user is The Hunt, sum all five cctp sensors
-      if (user?.name === "The Hunt") {
-        // Fetch all five sensors in parallel
-        const responses = await Promise.all(HUNT_KEYS.map(key =>
-          fetch("/api/tsdb", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-url": "http://35.221.150.154:5556"
-            },
-            body: JSON.stringify({
-              operation: "read",
-              key,
-              Read: {
-                start_timestamp: startTimestamp,
-                end_timestamp: now,
-                downsampling: timeRange.downsampling,
-                aggregation: activeAggregation
-              }
-            })
-          })
-        ))
-        const results: TSDBResponse[] = await Promise.all(responses.map(r => r.json()))
-        // Check all success
-        if (!results.every(r => r.success && r.data.success)) {
-          throw new Error("Failed to fetch all sensor data for The Hunt")
-        }
-        // Assume all sensors have same timestamps
-        const pointsArr = results.map(r => r.data.data)
-        if (!pointsArr.every(arr => arr && arr.length > 0)) {
-          throw new Error("No data found for one or more sensors")
-        }
-        // Use the first sensor's timestamps as reference
-        const refPoints = pointsArr[0]
-        const labels = refPoints.map(point => {
-          const date = new Date(point.timestamp * 1000)
-          if (activeTab === "60mins" || activeTab === "24hours") {
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          } else {
-            return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
-          }
-        })
-        // Sum values across all sensors per timestamp
-        const values = refPoints.map((point, idx) => {
-          let sum = 0
-          for (let i = 0; i < HUNT_KEYS.length; i++) {
-            const arr = pointsArr[i]
-            const keyConfig = getKeyConfig(HUNT_KEYS[i])
-            if (arr[idx]) {
-              sum += arr[idx].value * keyConfig.multiplier + keyConfig.offset
-            }
-          }
-          return sum
-        })
-        setCurrentUnit("kWh")
-        setChartData({
-          labels,
-          datasets: [{
-            label: `The Hunt (sum of 5 sensors, kWh)`,
-            data: values,
-            borderColor: "#22d3ee",
-            backgroundColor: "rgba(34, 211, 238, 0.1)",
-            tension: 0.3,
-            fill: false,
-            pointRadius: 2,
-            pointHoverRadius: 4
-          }]
-        })
-        return
-      }
-      // ...existing code for other users/sensors...
       // Check if this is a derived/accumulated sensor
       const isAccumulated = selectedOffice.includes('_accumulated')
       let actualSensorKey = selectedOffice
