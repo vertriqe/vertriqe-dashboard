@@ -28,6 +28,11 @@ async function loadUsers() {
         name: "About Coffee Jeju",
         email: "coffee@vertriqe.com",
         password: "coffee-jeju-2025!",
+      },
+      {
+        name: "TNL",
+        email: "tnl@vertriqe.com",
+        password: "tnl-vertriqe-2025!",
       }
     ]
 

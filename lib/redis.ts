@@ -119,10 +119,20 @@ const getDefaultUsers = () => {
       name: "About Coffee Jeju",
       email: "coffee@vertriqe.com",
       password: "coffee-jeju-2025!",
+    },
+    {
+      name: "TNL",
+      email: "tnl@vertriqe.com",
+      password: "tnl-vertriqe-2025!",
     }
   ]
 }
-
+//25415,25416 cttp cctp
+//TNL Sensors
+//vertriqe_25415_cctp (cummulative energy usage kWh)
+//vertriqe_25416_cctp (cummulative energy usage kWh)
+//vertriqe_25415_cttp (instantaneous power usage kWh)
+//vertriqe_25416_cttp (instantaneous power usage kWh)
 // Initialize storage and create dummy users
 const initializeStorage = async () => {
   try {

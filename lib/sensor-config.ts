@@ -154,6 +154,38 @@ export const HAI_SANG_SENSORS: SensorConfig[] = [
   }
 ]
 
+// TNL sensor configurations
+export const TNL_SENSORS: SensorConfig[] = [
+  {
+    key: "vertriqe_25415_cctp",
+    name: "Sensor 1 - Total Energy (25415)",
+    type: "cumulative",
+    owner: "TNL",
+    description: "Sensor 1 cumulative energy consumption"
+  },
+  {
+    key: "vertriqe_25415_cttp",
+    name: "Sensor 1 - Instant Power (25415)",
+    type: "instant",
+    owner: "TNL",
+    description: "Sensor 1 instantaneous power consumption"
+  },
+  {
+    key: "vertriqe_25416_cctp",
+    name: "Sensor 2 - Total Energy (25416)",
+    type: "cumulative",
+    owner: "TNL",
+    description: "Sensor 2 cumulative energy consumption"
+  },
+  {
+    key: "vertriqe_25416_cttp",
+    name: "Sensor 2 - Instant Power (25416)",
+    type: "instant",
+    owner: "TNL",
+    description: "Sensor 2 instantaneous power consumption"
+  }
+]
+
 // About Coffee Jeju sensor configurations
 // Source: About Coffee Jeju.csv
 // Area | Energy Meter | AC Controller | Present Sensor | Ambient Sensor | Supply Air Sensor
@@ -368,8 +400,25 @@ function generateAboutCoffeeZones(): ZoneSensor[] {
 
 export const ABOUT_COFFEE_ZONES: ZoneSensor[] = generateAboutCoffeeZones()
 
+export const TNL_ZONES: ZoneSensor[] = [
+  {
+    id: 1,
+    name: "Sensor 1",
+    tempSensor: "",
+    humSensor: "",
+    savingModeEnabled: false,
+  },
+  {
+    id: 2,
+    name: "Sensor 2",
+    tempSensor: "",
+    humSensor: "",
+    savingModeEnabled: false,
+  }
+]
+
 // Combined sensor configurations
-export const ALL_SENSORS = [...WEAVE_SENSORS, ...HUNT_SENSORS, ...HAI_SANG_SENSORS, ...ABOUT_COFFEE_SENSORS]
+export const ALL_SENSORS = [...WEAVE_SENSORS, ...HUNT_SENSORS, ...HAI_SANG_SENSORS, ...TNL_SENSORS, ...ABOUT_COFFEE_SENSORS]
 
 // Utility functions
 export function getSensorsByOwner(owner: string): SensorConfig[] {
@@ -415,6 +464,8 @@ export function getZonesByOwner(owner: string): ZoneSensor[] {
     return HUNT_ZONES
   } else if (owner === "About Coffee Jeju") {
     return ABOUT_COFFEE_ZONES
+  } else if (owner === "TNL") {
+    return TNL_ZONES
   }
   return []
 }
