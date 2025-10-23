@@ -5,6 +5,7 @@ import { Home, Briefcase, Users, Zap, BarChart3, Settings, Shield } from "lucide
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LogoutButton } from "./logout-button"
+import { SuperAdminSwitcher } from "./super-admin-switcher"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useUser } from "@/contexts/user-context"
@@ -129,7 +130,7 @@ export function Sidebar() {
 
       {/* User info and logout */}
       <div className="mt-auto relative z-10 flex flex-col items-center gap-3">
-
+        <SuperAdminSwitcher />
         <LogoutButton />
       </div>
     </div>

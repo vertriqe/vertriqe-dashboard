@@ -14,11 +14,12 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname()
   const isLoginPage = pathname === "/login"
+  const isSuperLoginPage = pathname === "/super-login"
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" suppressHydrationWarning>
-      {isLoginPage ? (
-        // Login page without sidebar
+      {isLoginPage || isSuperLoginPage ? (
+        // Login and super-login pages without sidebar
         children
       ) : (
         // Protected pages with sidebar
