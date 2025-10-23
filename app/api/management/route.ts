@@ -28,8 +28,6 @@ async function getUserFromToken(): Promise<string | null> {
 
 async function fetchSensorData(sensorKey: string): Promise<{ value: number; timestamp: number } | null> {
   try {
-    const now = Math.floor(Date.now() / 1000)
-    const startTimestamp = now - 3600 // Last hour
 
     const payload = {
       operation: "read",
@@ -55,7 +53,7 @@ async function fetchSensorData(sensorKey: string): Promise<{ value: number; time
 
     const result: TSDBResponse = await response.json()
     console.log("Response body for", sensorKey, result.data.data)
-    if (result.success && result.data.success && result.data.data.length > 0) {
+    if (result.success && result.data.success && result.data.data && result.data.data.length > 0) {
       // Get the latest data point
       const latestPoint = result.data.data[result.data.data.length - 1]
       return { value: latestPoint.value, timestamp: latestPoint.timestamp }

@@ -161,120 +161,120 @@ export const ABOUT_COFFEE_SENSORS: SensorConfig[] = [
   // 1-1: AC:25327, Present:25334, Ambient:25335, Supply:25349
   { key: "vertriqe_25327_temperature", name: "1-1 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25334_presence", name: "1-1 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25335_amb_temp", name: "1-1 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25335_amb_hum", name: "1-1 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25335_amb_temp2", name: "1-1 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25335_amb_hum2", name: "1-1 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25349_sup_temp", name: "1-1 Supply Air Temperature", type: "instant", owner: "About Coffee Jeju" },
 
   // 1-2: AC:25331, Present:25343, Ambient:25336
   { key: "vertriqe_25331_temperature", name: "1-2 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25343_presence", name: "1-2 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25336_amb_temp", name: "1-2 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25336_amb_hum", name: "1-2 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25336_amb_temp2", name: "1-2 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25336_amb_hum2", name: "1-2 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 1-3: AC:25329, Present:25344, Ambient:25337
   { key: "vertriqe_25329_temperature", name: "1-3 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25344_presence", name: "1-3 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25337_amb_temp", name: "1-3 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25337_amb_hum", name: "1-3 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25337_amb_temp2", name: "1-3 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25337_amb_hum2", name: "1-3 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 1-4: AC:25328, Present:25345, Ambient:25338, Supply:25350
   { key: "vertriqe_25328_temperature", name: "1-4 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25345_presence", name: "1-4 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25338_amb_temp", name: "1-4 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25338_amb_hum", name: "1-4 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25338_amb_temp2", name: "1-4 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25338_amb_hum2", name: "1-4 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25350_sup_temp", name: "1-4 Supply Air Temperature", type: "instant", owner: "About Coffee Jeju" },
 
   // 1-5: AC:25333, Present:25346, Ambient:25339
   { key: "vertriqe_25333_temperature", name: "1-5 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25346_presence", name: "1-5 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25339_amb_temp", name: "1-5 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25339_amb_hum", name: "1-5 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25339_amb_temp2", name: "1-5 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25339_amb_hum2", name: "1-5 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 1-6: AC:25330, Present:25347, Ambient:25340
   { key: "vertriqe_25330_temperature", name: "1-6 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25347_presence", name: "1-6 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25340_amb_temp", name: "1-6 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25340_amb_hum", name: "1-6 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25340_amb_temp2", name: "1-6 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25340_amb_hum2", name: "1-6 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 1-7: AC:25332, Present:25348, Ambient:25341
   { key: "vertriqe_25332_temperature", name: "1-7 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25348_presence", name: "1-7 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25341_amb_temp", name: "1-7 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25341_amb_hum", name: "1-7 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25341_amb_temp2", name: "1-7 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25341_amb_hum2", name: "1-7 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-1: AC:25405, Present:25358, Ambient:25351
   { key: "vertriqe_25405_temperature", name: "2-1 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25358_presence", name: "2-1 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25351_amb_temp", name: "2-1 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25351_amb_hum", name: "2-1 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25351_amb_temp2", name: "2-1 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25351_amb_hum2", name: "2-1 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-2: AC:25403, Present:25359, Ambient:25352
   { key: "vertriqe_25403_temperature", name: "2-2 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25359_presence", name: "2-2 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25352_amb_temp", name: "2-2 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25352_amb_hum", name: "2-2 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25352_amb_temp2", name: "2-2 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25352_amb_hum2", name: "2-2 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-3: AC:25404, Present:25360, Ambient:25353, Supply:25370
   { key: "vertriqe_25404_temperature", name: "2-3 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25360_presence", name: "2-3 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25353_amb_temp", name: "2-3 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25353_amb_hum", name: "2-3 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25353_amb_temp2", name: "2-3 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25353_amb_hum2", name: "2-3 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25370_sup_temp", name: "2-3 Supply Air Temperature", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-4: AC:25402, Present:25361, Ambient:25354
   { key: "vertriqe_25402_temperature", name: "2-4 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25361_presence", name: "2-4 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25354_amb_temp", name: "2-4 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25354_amb_hum", name: "2-4 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25354_amb_temp2", name: "2-4 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25354_amb_hum2", name: "2-4 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-5: AC:25401, Present:25362, Ambient:25355
   { key: "vertriqe_25401_temperature", name: "2-5 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25362_presence", name: "2-5 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25355_amb_temp", name: "2-5 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25355_amb_hum", name: "2-5 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25355_amb_temp2", name: "2-5 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25355_amb_hum2", name: "2-5 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-6: AC:25400, Present:25363, Ambient:25356
   { key: "vertriqe_25400_temperature", name: "2-6 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25363_presence", name: "2-6 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25356_amb_temp", name: "2-6 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25356_amb_hum", name: "2-6 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25356_amb_temp2", name: "2-6 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25356_amb_hum2", name: "2-6 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-7: AC:25322, Present:25364, Ambient:25357, Supply:25371
   { key: "vertriqe_25322_temperature", name: "2-7 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25364_presence", name: "2-7 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25357_amb_temp", name: "2-7 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25357_amb_hum", name: "2-7 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25357_amb_temp2", name: "2-7 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25357_amb_hum2", name: "2-7 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25371_sup_temp", name: "2-7 Supply Air Temperature", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-8: AC:25326, Present:25372, Ambient:25365
   { key: "vertriqe_25326_temperature", name: "2-8 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25372_presence", name: "2-8 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25365_amb_temp", name: "2-8 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25365_amb_hum", name: "2-8 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25365_amb_temp2", name: "2-8 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25365_amb_hum2", name: "2-8 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-9: AC:25321, Present:25373, Ambient:25366
   { key: "vertriqe_25321_temperature", name: "2-9 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25373_presence", name: "2-9 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25366_amb_temp", name: "2-9 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25366_amb_hum", name: "2-9 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25366_amb_temp2", name: "2-9 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25366_amb_hum2", name: "2-9 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-10: AC:25323, Present:25374, Ambient:25367
   { key: "vertriqe_25323_temperature", name: "2-10 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25374_presence", name: "2-10 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25367_amb_temp", name: "2-10 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25367_amb_hum", name: "2-10 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25367_amb_temp2", name: "2-10 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25367_amb_hum2", name: "2-10 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-11: AC:25324, Present:25375, Ambient:25368
   { key: "vertriqe_25324_temperature", name: "2-11 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25375_presence", name: "2-11 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25368_amb_temp", name: "2-11 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25368_amb_hum", name: "2-11 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25368_amb_temp2", name: "2-11 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25368_amb_hum2", name: "2-11 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 
   // 2-12: AC:25325, Present:25376, Ambient:25369
   { key: "vertriqe_25325_temperature", name: "2-12 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25376_presence", name: "2-12 Presence", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25369_amb_temp", name: "2-12 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
-  { key: "vertriqe_25369_amb_hum", name: "2-12 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25369_amb_temp2", name: "2-12 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
+  { key: "vertriqe_25369_amb_hum2", name: "2-12 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 ]
 
 // Zone sensor configurations for management
@@ -340,141 +340,33 @@ export const HUNT_ZONES: ZoneSensor[] = [
   }
 ]
 
-export const ABOUT_COFFEE_ZONES: ZoneSensor[] = [
-  {
-    id: 1,
-    name: "1-1",
-    tempSensor: "vertriqe_25335_amb_temp",
-    humSensor: "vertriqe_25335_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 2,
-    name: "1-2",
-    tempSensor: "vertriqe_25336_amb_temp",
-    humSensor: "vertriqe_25336_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 3,
-    name: "1-3",
-    tempSensor: "vertriqe_25337_amb_temp",
-    humSensor: "vertriqe_25337_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 4,
-    name: "1-4",
-    tempSensor: "vertriqe_25338_amb_temp",
-    humSensor: "vertriqe_25338_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 5,
-    name: "1-5",
-    tempSensor: "vertriqe_25339_amb_temp",
-    humSensor: "vertriqe_25339_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 6,
-    name: "1-6",
-    tempSensor: "vertriqe_25340_amb_temp",
-    humSensor: "vertriqe_25340_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 7,
-    name: "1-7",
-    tempSensor: "vertriqe_25341_amb_temp",
-    humSensor: "vertriqe_25341_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 8,
-    name: "2-1",
-    tempSensor: "vertriqe_25351_amb_temp",
-    humSensor: "vertriqe_25351_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 9,
-    name: "2-2",
-    tempSensor: "vertriqe_25352_amb_temp",
-    humSensor: "vertriqe_25352_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 10,
-    name: "2-3",
-    tempSensor: "vertriqe_25353_amb_temp",
-    humSensor: "vertriqe_25353_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 11,
-    name: "2-4",
-    tempSensor: "vertriqe_25354_amb_temp",
-    humSensor: "vertriqe_25354_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 12,
-    name: "2-5",
-    tempSensor: "vertriqe_25355_amb_temp",
-    humSensor: "vertriqe_25355_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 13,
-    name: "2-6",
-    tempSensor: "vertriqe_25356_amb_temp",
-    humSensor: "vertriqe_25356_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 14,
-    name: "2-7",
-    tempSensor: "vertriqe_25357_amb_temp",
-    humSensor: "vertriqe_25357_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 15,
-    name: "2-8",
-    tempSensor: "vertriqe_25365_amb_temp",
-    humSensor: "vertriqe_25365_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 16,
-    name: "2-9",
-    tempSensor: "vertriqe_25366_amb_temp",
-    humSensor: "vertriqe_25366_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 17,
-    name: "2-10",
-    tempSensor: "vertriqe_25367_amb_temp",
-    humSensor: "vertriqe_25367_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 18,
-    name: "2-11",
-    tempSensor: "vertriqe_25368_amb_temp",
-    humSensor: "vertriqe_25368_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 19,
-    name: "2-12",
-    tempSensor: "vertriqe_25369_amb_temp",
-    humSensor: "vertriqe_25369_amb_hum",
-    savingModeEnabled: false,
-  }
-]
+// Generate ABOUT_COFFEE_ZONES from ABOUT_COFFEE_SENSORS
+// This automatically creates zone configurations from ambient sensors
+function generateAboutCoffeeZones(): ZoneSensor[] {
+  const zones: ZoneSensor[] = []
+  // Filter for ambient temperature sensors (with '2' suffix)
+  const ambientSensors = ABOUT_COFFEE_SENSORS.filter(s => s.key.includes('_amb_temp2'))
+
+  ambientSensors.forEach((tempSensor, index) => {
+    // Extract area name from sensor name (e.g., "1-1 Ambient Temperature" -> "1-1")
+    const areaName = tempSensor.name.split(' ')[0]
+
+    // Find corresponding humidity sensor (replace _amb_temp2 with _amb_hum2)
+    const humSensorKey = tempSensor.key.replace('_amb_temp2', '_amb_hum2')
+
+    zones.push({
+      id: index + 1,
+      name: areaName,
+      tempSensor: tempSensor.key,
+      humSensor: humSensorKey,
+      savingModeEnabled: false
+    })
+  })
+
+  return zones
+}
+
+export const ABOUT_COFFEE_ZONES: ZoneSensor[] = generateAboutCoffeeZones()
 
 // Combined sensor configurations
 export const ALL_SENSORS = [...WEAVE_SENSORS, ...HUNT_SENSORS, ...HAI_SANG_SENSORS, ...ABOUT_COFFEE_SENSORS]
