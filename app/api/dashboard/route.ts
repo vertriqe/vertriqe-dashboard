@@ -8,7 +8,7 @@ import {
   getDummyWeatherData,
   type WeatherLocation,
 } from "@/lib/weather-service"
-import { getWeaveDashboardSensors, getHuntCumulativeSensors } from "@/lib/sensor-config"
+import { getWeaveDashboardSensors, getHuntCumulativeSensors, getTnlCumulativeSensors } from "@/lib/sensor-config"
 import { fetchTsdbConfig, getKeyConfig } from "@/lib/tsdb-config"
 import { getTsdbUrl, API_CONFIG } from "@/lib/api-config"
 
@@ -51,7 +51,8 @@ async function getBaselineForUser(userName: string): Promise<any> {
     // Map user names to site IDs
     const siteMapping: Record<string, string> = {
       "The Hunt": "hunt",
-      "Weave Studio": "weave"
+      "Weave Studio": "weave",
+      "TNL": "tnl"
     }
 
     const siteId = siteMapping[userName]
@@ -373,8 +374,139 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
   }
 }
 
+interface TnlSensorData {
+  timestamp: number
+  value: number
+}
+
+async function fetchTnlSensorData(): Promise<TnlSensorData[]> {
+  try {
+    // Check Redis cache first (30 minutes TTL)
+    const cacheKey = "tnl_sensor_data"
+    const cachedData = await redis.get(cacheKey)
+
+    console.log("🔧 Fetching fresh TNL sensor data...")
+
+    // Get TSDB configuration for multipliers and units
+    const tsdbConfig = await fetchTsdbConfig()
+
+    // TNL's cumulative sensors
+    const tnlCumulativeSensors = getTnlCumulativeSensors()
+    console.log(`📊 TNL sensors to fetch: ${tnlCumulativeSensors.join(', ')}`)
+
+    const now = Math.floor(Date.now() / 1000)
+    const thirtyDaysAgo = now - (30 * 24 * 3600) // 30 days in seconds
+    console.log(`⏰ Fetching TNL data from ${new Date(thirtyDaysAgo * 1000).toISOString()} to ${new Date(now * 1000).toISOString()}`)
+
+    // Fetch data for all cumulative sensors
+    const sensorPromises = tnlCumulativeSensors.map(async (sensorKey) => {
+      const payload = {
+        operation: "read",
+        key: sensorKey,
+        Read: {
+          start_timestamp: thirtyDaysAgo,
+          end_timestamp: now,
+          downsampling: 86400, // Daily aggregation
+          aggregation: "max" // Use max to get daily peak values
+        }
+      }
+
+      const response = await fetch(API_CONFIG.TSDB.BASE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-url": "http://35.221.150.154:5556"
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        console.warn(`❌ Failed to fetch data for TNL sensor ${sensorKey}: ${response.status} ${response.statusText}`)
+        return { key: sensorKey, data: [] }
+      }
+
+      const result = await response.json()
+
+      // Handle both nested and flat response formats
+      let dataPoints = []
+      if (result.success) {
+        if (result.data.success && result.data.data) {
+          // Nested format: {success: true, data: {success: true, data: [...]}}
+          dataPoints = result.data.data
+        } else if (Array.isArray(result.data)) {
+          // Flat format: {success: true, data: [...]}
+          dataPoints = result.data
+        }
+      }
+
+      console.log(`📈 TNL sensor ${sensorKey}: fetched ${dataPoints.length} raw data points`)
+      if (dataPoints.length > 0) {
+        console.log(`   First point: timestamp=${dataPoints[0].timestamp}, value=${dataPoints[0].value}`)
+        console.log(`   Last point: timestamp=${dataPoints[dataPoints.length - 1].timestamp}, value=${dataPoints[dataPoints.length - 1].value}`)
+      }
+
+      return {
+        key: sensorKey,
+        data: dataPoints
+      }
+    })
+
+    const sensorResults = await Promise.all(sensorPromises)
+
+    // Create a time-indexed map to sum values across sensors
+    const timeValueMap = new Map<number, number>()
+
+    sensorResults.forEach(({ key, data }) => {
+      const keyConfig = getKeyConfig(key, tsdbConfig)
+      console.log(`🔧 Processing TNL sensor ${key} with config: multiplier=${keyConfig.multiplier}, offset=${keyConfig.offset}, unit=${keyConfig.unit}`)
+
+      data.forEach((point: any, idx: number) => {
+        // Normalize timestamp to start of day FIRST
+        const dateOfTs = new Date(point.timestamp * 1000).toISOString().split("T")[0]
+        const tsOfDate = new Date(dateOfTs).getTime() / 1000
+
+        // Apply multiplier and offset from TSDB config
+        const processedValue = point.value * keyConfig.multiplier + keyConfig.offset
+
+        // Get existing value using the NORMALIZED timestamp
+        const existingValue = timeValueMap.get(tsOfDate) || 0
+
+        // Sum values from both sensors for the same day
+        const newValue = existingValue + processedValue
+        timeValueMap.set(tsOfDate, newValue)
+
+        if (idx < 3) {
+          console.log(`   Point ${idx}: date=${dateOfTs}, sensor_value=${point.value}, processed=${processedValue.toFixed(2)}, existing=${existingValue.toFixed(2)}, new_sum=${newValue.toFixed(2)}`)
+        }
+      })
+    })
+
+    // Convert back to array format and sort by timestamp
+    let aggregatedData = Array.from(timeValueMap.entries())
+      .map(([timestamp, value]) => ({ timestamp, value }))
+      .sort((a, b) => a.timestamp - b.timestamp)
+
+    console.log(`📊 TNL aggregated data summary:`)
+    console.log(`   Total data points after aggregation: ${aggregatedData.length}`)
+    if (aggregatedData.length > 0) {
+      console.log(`   First aggregated point: date=${new Date(aggregatedData[0].timestamp * 1000).toISOString()}, value=${aggregatedData[0].value}`)
+      console.log(`   Last aggregated point: date=${new Date(aggregatedData[aggregatedData.length - 1].timestamp * 1000).toISOString()}, value=${aggregatedData[aggregatedData.length - 1].value}`)
+    }
+
+    // Cache the processed data for 30 minutes (1800 seconds)
+    await redis.set(cacheKey, JSON.stringify(aggregatedData), 1800)
+
+    console.log(`✅ Fetched and cached data for ${tnlCumulativeSensors.length} TNL sensors, ${aggregatedData.length} data points`)
+    return aggregatedData
+
+  } catch (error) {
+    console.error("Error fetching TNL sensor data:", error)
+    return []
+  }
+}
+
 async function calculateEnergyMetrics(
-  sensorData: HuntSensorData[] | WeaveSensorData[],
+  sensorData: HuntSensorData[] | WeaveSensorData[] | TnlSensorData[],
   _config: EnergyConfig,
   baseline: any = null,
   tsdbConfig: any = null
@@ -527,7 +659,7 @@ export async function GET() {
     let energyUsageData
     let energySavingsData
 
-    if (user.name === "The Hunt" || user.name === "Weave Studio") {
+    if (user.name === "The Hunt" || user.name === "Weave Studio" || user.name === "TNL") {
       console.log(`🔧 Fetching real energy data for ${user.name}...`)
 
       // Get energy configuration
@@ -542,10 +674,22 @@ export async function GET() {
       // Fetch sensor data based on user
       const sensorData = user.name === "The Hunt"
         ? await fetchHuntSensorData()
+        : user.name === "TNL"
+        ? await fetchTnlSensorData()
         : await fetchWeaveSensorData()
+
+      console.log(`📊 ${user.name} sensor data fetched: ${sensorData.length} total data points`)
+      if (sensorData.length > 0) {
+        console.log(`   Sample data point: timestamp=${sensorData[0].timestamp}, value=${sensorData[0].value}`)
+      }
 
       // Calculate energy metrics with baseline
       const metrics = await calculateEnergyMetrics(sensorData, config, baseline, tsdbConfig)
+
+      console.log(`📈 ${user.name} metrics calculated:`)
+      console.log(`   Actual usage points: ${metrics.actualUsage.length}`)
+      console.log(`   Baseline forecast points: ${metrics.baselineForecast.length}`)
+      console.log(`   Latest cumulative: ${metrics.latestCumulative}`)
 
       // Generate date labels for the last 30 days
       const dateLabels = sensorData.map(point => {
@@ -575,6 +719,14 @@ export async function GET() {
       }
 
       console.log(`✅ Using real energy data for ${user.name} with ${baseline ? baseline.regression.type : 'default'} baseline`)
+      console.log(`📤 Sending to frontend:`)
+      console.log(`   Labels: ${energyUsageData.labels.length} labels`)
+      console.log(`   Actual usage: ${energyUsageData.actualUsage.length} data points`)
+      console.log(`   Baseline forecast: ${energyUsageData.baselineForecast.length} data points`)
+      if (energyUsageData.actualUsage.length > 0) {
+        console.log(`   First actual value: ${energyUsageData.actualUsage[0]}`)
+        console.log(`   Last actual value: ${energyUsageData.actualUsage[energyUsageData.actualUsage.length - 1]}`)
+      }
     } else {
       // Use empty/minimal data for other users
       energyUsageData = {

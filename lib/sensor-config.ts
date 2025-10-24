@@ -450,6 +450,12 @@ export function getHuntCumulativeSensors(): string[] {
     .map(sensor => sensor.key)
 }
 
+export function getTnlCumulativeSensors(): string[] {
+  return TNL_SENSORS
+    .filter(sensor => sensor.type === 'cumulative')
+    .map(sensor => sensor.key)
+}
+
 // Mapping for accumulated sensors to their actual sensor keys (for Weave Studio) weave = cttp
 export const ACCUMULATED_SENSOR_MAPPING: Record<string, string> = {
   'weave_ac1_accumulated': 'vertriqe_25247_weave',

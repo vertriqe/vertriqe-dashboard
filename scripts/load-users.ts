@@ -60,6 +60,14 @@ async function loadUsers() {
     }))
     console.log("✓ Location set for About Coffee Jeju (Jeju)")
 
+    // Set location data for TNL
+    await redis.set("user_location:tnl@vertriqe.com", JSON.stringify({
+      name: "Yau Ma Tei",
+      lat: "22.3123",
+      lon: "114.1702"
+    }))
+    console.log("✓ Location set for TNL (Yau Ma Tei)")
+
     // Verify
     const storedData = await redis.get("vertriqe_auth")
     if (storedData) {

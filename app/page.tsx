@@ -62,7 +62,8 @@ export default function Dashboard() {
   const currentDate = getCurrentFormattedDate()
   const isHuntUser = user?.name === "The Hunt"
   const isWeaveStudioUser = user?.name === "Weave Studio"
-  const isRealDataUser = isHuntUser || isWeaveStudioUser
+  const isTnlUser = user?.name === "TNL"
+  const isRealDataUser = isHuntUser || isWeaveStudioUser || isTnlUser
   const logo = getLogoForUser(user?.email)
 
   useEffect(() => {
@@ -98,7 +99,8 @@ export default function Dashboard() {
         const siteMap: { [key: string]: string } = {
           "The Hunt": "hunt",
           "Weave Studio": "weave",
-          "Hai Sang": "haisang"
+          "Hai Sang": "haisang",
+          "TNL": "tnl"
         }
         const siteId = siteMap[user?.name || ""] || "hunt"
 

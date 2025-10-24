@@ -174,6 +174,13 @@ const initializeStorage = async () => {
       lat: "33.4890",
       lon: "126.4983"
     }))
+
+    // Set user location data for TNL
+    await redis.set("user_location:tnl@vertriqe.com", JSON.stringify({
+      name: "Yau Ma Tei",
+      lat: "22.3123",
+      lon: "114.1702"
+    }))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error("Error during storage initialization:", errorMessage)
@@ -207,6 +214,17 @@ const initializeStorage = async () => {
       }))
     } catch (locationError) {
       console.error("Failed to set About Coffee Jeju location data:", locationError)
+    }
+
+    // Still try to set location data for TNL
+    try {
+      await redis.set("user_location:tnl@vertriqe.com", JSON.stringify({
+        name: "Yau Ma Tei",
+        lat: "22.3123",
+        lon: "114.1702"
+      }))
+    } catch (locationError) {
+      console.error("Failed to set TNL location data:", locationError)
     }
   }
 }
