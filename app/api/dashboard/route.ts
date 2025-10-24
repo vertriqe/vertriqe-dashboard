@@ -85,6 +85,13 @@ async function generateBaselineForecast(
     return []
   }
 
+  console.log(`🔍 Generating baseline forecast for ${baseline.siteId}:`)
+  console.log(`   Regression type: ${baseline.regression.type}`)
+  console.log(`   Slope: ${baseline.regression.slope}`)
+  console.log(`   Intercept: ${baseline.regression.intercept}`)
+  console.log(`   Energy key: ${baseline.energyKey}`)
+  console.log(`   Temp key: ${baseline.tempKey}`)
+
   try {
     // Get temperature data for the same time range
     const tempKey = baseline.tempKey || "weather_thehunt_temp_c"
@@ -123,7 +130,7 @@ async function generateBaselineForecast(
     const tempPoints = tempData.data.data
 
     // Generate baseline values using the regression equation
-    const baselineValues = timestamps.map(timestamp => {
+    const baselineValues = timestamps.map((timestamp, idx) => {
       // Find corresponding temperature
       const tempPoint = tempPoints.find((tp: any) =>
         Math.abs(tp.timestamp - timestamp) <= 1800 // 30 min tolerance
@@ -147,12 +154,24 @@ async function generateBaselineForecast(
         baselineEnergy = regression.slope * Math.log(temperature) + regression.intercept
       }
 
+      const baselineEnergyBeforeMultiply = baselineEnergy
       baselineEnergy *= 24 // Convert to daily energy
+
+      if (idx === 0) {
+        console.log(`   First baseline calculation:`)
+        console.log(`     Temperature: ${temperature.toFixed(2)}°C`)
+        console.log(`     Baseline (hourly): ${baselineEnergyBeforeMultiply.toFixed(2)} kWh`)
+        console.log(`     Baseline (daily, ×24): ${baselineEnergy.toFixed(2)} kWh`)
+      }
 
       return Math.max(0, baselineEnergy) // Ensure non-negative
     })
 
     console.log(`✅ Generated baseline forecast with ${baselineValues.length} points using ${baseline.regression.type} regression`)
+    if (baselineValues.length > 0) {
+      console.log(`   First baseline value: ${baselineValues[0].toFixed(2)} kWh`)
+      console.log(`   Last baseline value: ${baselineValues[baselineValues.length - 1].toFixed(2)} kWh`)
+    }
     return baselineValues
 
   } catch (error) {
@@ -165,15 +184,15 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
   try {
     // Check Redis cache first (30 minutes TTL)
     const cacheKey = "hunt_sensor_data"
-    const cachedData = await redis.get(cacheKey)
 
     console.log("🔧 Fetching fresh Hunt sensor data...")
-    
+
     // Get TSDB configuration for multipliers and units
     const tsdbConfig = await fetchTsdbConfig()
-    
+
     // The Hunt's cumulative sensors
     const huntCumulativeSensors = getHuntCumulativeSensors()
+    console.log(`📊 Hunt sensors to fetch: ${huntCumulativeSensors.length} sensors (${huntCumulativeSensors.join(', ')})`)
     
     const now = Math.floor(Date.now() / 1000)
     const thirtyDaysAgo = now - (30 * 24 * 3600) // 30 days in seconds
@@ -232,14 +251,26 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
     
     sensorResults.forEach(({ key, data }) => {
       const keyConfig = getKeyConfig(key, tsdbConfig)
-      
-      data.forEach((point: any) => {
-        // Apply multiplier and offset from TSDB config
-        const processedValue = point.value * keyConfig.multiplier + keyConfig.offset
-        const existingValue = timeValueMap.get(point.timestamp) || 0
+      console.log(`🔧 Processing Hunt sensor ${key}: ${data.length} data points, config: multiplier=${keyConfig.multiplier}, offset=${keyConfig.offset}`)
+
+      data.forEach((point: any, idx: number) => {
+        // Normalize timestamp to start of day FIRST
         const dateOfTs = new Date(point.timestamp * 1000).toISOString().split("T")[0]
         const tsOfDate = new Date(dateOfTs).getTime() / 1000
-        timeValueMap.set(tsOfDate, existingValue + processedValue)
+
+        // Apply multiplier and offset from TSDB config
+        const processedValue = point.value * keyConfig.multiplier + keyConfig.offset
+
+        // Get existing value using the NORMALIZED timestamp
+        const existingValue = timeValueMap.get(tsOfDate) || 0
+
+        // Sum values from all 5 sensors for the same day
+        const newValue = existingValue + processedValue
+        timeValueMap.set(tsOfDate, newValue)
+
+        if (idx === 0) {
+          console.log(`   First point: date=${dateOfTs}, sensor_value=${point.value}, processed=${processedValue.toFixed(2)}, existing=${existingValue.toFixed(2)}, new_sum=${newValue.toFixed(2)}`)
+        }
       })
     })
     
@@ -248,19 +279,16 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
       .map(([timestamp, value]) => ({ timestamp, value }))
       .sort((a, b) => a.timestamp - b.timestamp)
 
-    // deduplicate data points that with the same date, for the same date, use the max value
-    // for (let i = aggregatedData.length - 1; i > 0; i--) {
-    //   if (aggregatedData[i].timestamp === aggregatedData[i - 1].timestamp) {
-    //     aggregatedData[i - 1].value = Math.max(aggregatedData[i - 1].value, aggregatedData[i].value)
-    //     aggregatedData.splice(i, 1)
-    //     console.log(`Deduplicated data point at timestamp ${aggregatedData[i].timestamp}`) // Log deduplication
-    //   }
-    // }
-    //console.log(aggregatedData)
+    console.log(`📊 Hunt aggregated data summary:`)
+    console.log(`   Total data points after aggregation: ${aggregatedData.length}`)
+    if (aggregatedData.length > 0) {
+      console.log(`   First aggregated point: date=${new Date(aggregatedData[0].timestamp * 1000).toISOString()}, value=${aggregatedData[0].value.toFixed(2)}`)
+      console.log(`   Last aggregated point: date=${new Date(aggregatedData[aggregatedData.length - 1].timestamp * 1000).toISOString()}, value=${aggregatedData[aggregatedData.length - 1].value.toFixed(2)}`)
+    }
 
     // Cache the processed data for 30 minutes (1800 seconds)
     await redis.set(cacheKey, JSON.stringify(aggregatedData), 1800)
-    
+
     console.log(`✅ Fetched and cached data for ${huntCumulativeSensors.length} sensors, ${aggregatedData.length} data points`)
     return aggregatedData
     
@@ -274,7 +302,6 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
   try {
     // Check Redis cache first (30 minutes TTL)
     const cacheKey = "weave_sensor_data"
-    const cachedData = await redis.get(cacheKey)
 
     console.log("🔧 Fetching fresh Weave Studio sensor data...")
     
@@ -330,6 +357,9 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
       }
       
       if (dataPoints.length > 0) {
+
+        const isCTTP = true;
+
         const _result = dataPoints.map((point: any) => {
           const config = getKeyConfig(sensorKey, tsdbConfig)
           return {
@@ -383,7 +413,6 @@ async function fetchTnlSensorData(): Promise<TnlSensorData[]> {
   try {
     // Check Redis cache first (30 minutes TTL)
     const cacheKey = "tnl_sensor_data"
-    const cachedData = await redis.get(cacheKey)
 
     console.log("🔧 Fetching fresh TNL sensor data...")
 
@@ -546,7 +575,7 @@ async function calculateEnergyMetrics(
 
   // Fallback to default calculation if no baseline available
   if (baselineForecast.length === 0) {
-    baselineForecast = actualUsage.map(usage => usage * 1.255)
+    baselineForecast = actualUsage.map(usage => usage * 1.15)
   }
 
   return {
