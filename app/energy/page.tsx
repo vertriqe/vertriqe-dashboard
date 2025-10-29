@@ -12,7 +12,7 @@ import { LineChart } from "@/components/line-chart"
 import { getLogoForUser } from "@/lib/logo-utils"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
 import { useUser } from "@/contexts/user-context"
-import { getSensorsByOwner, ACCUMULATED_SENSOR_MAPPING } from "@/lib/sensor-config"
+import { getSensorsByOwner } from "@/lib/sensor-config"
 import { getTsdbUrl } from "@/lib/api-config"
 // Weather data will be fetched via API instead of direct import
 
@@ -224,7 +224,7 @@ export default function EnergyDashboard() {
       const timeRange = timeRanges[activeTab as keyof typeof timeRanges]
       const startTimestamp = now - timeRange.seconds
 
-      // Check if this is a synthetic energy sensor or accumulated sensor
+      // Check if this is a synthetic energy sensor
       const isSyntheticEnergy = selectedOffice.includes('_energy')
       const isAccumulated = selectedOffice.includes('_accumulated')
 
@@ -232,9 +232,8 @@ export default function EnergyDashboard() {
       if (isSyntheticEnergy) {
         // Remove _energy suffix to get the original instant power sensor key
         actualSensorKey = selectedOffice.replace('_energy', '')
-      } else if (isAccumulated) {
-        actualSensorKey = ACCUMULATED_SENSOR_MAPPING[selectedOffice] || selectedOffice
       }
+      // Note: Old accumulated sensors have been removed in favor of synthetic energy sensors
 
       const payload = {
         operation: "read",

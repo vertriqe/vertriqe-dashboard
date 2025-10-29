@@ -36,30 +36,11 @@ export const WEAVE_SENSORS: SensorConfig[] = [
     key: "vertriqe_25245_weave",
     name: "Combined - Average Power",
     type: "instant",
-    owner: "Weave Studio", 
+    owner: "Weave Studio",
     description: "Combined instant power consumption"
-  },
-  {
-    key: "weave_ac1_accumulated",
-    name: "AC 1 - Energy Consumption",
-    type: "accumulated",
-    owner: "Weave Studio",
-    description: "Air conditioner 1 accumulated energy consumption"
-  },
-  {
-    key: "weave_ac2_accumulated", 
-    name: "AC 2 - Energy Consumption",
-    type: "accumulated",
-    owner: "Weave Studio",
-    description: "Air conditioner 2 accumulated energy consumption"
-  },
-  {
-    key: "weave_combined_accumulated",
-    name: "Combined - Energy Consumption",
-    type: "accumulated",
-    owner: "Weave Studio",
-    description: "Combined accumulated energy consumption"
   }
+  // Note: Synthetic "Energy Consumption" sensors are automatically created
+  // from the instant power sensors in the energy page
 ]
 
 // The Hunt sensor configurations
@@ -140,7 +121,7 @@ export const HUNT_SENSORS: SensorConfig[] = [
 export const HAI_SANG_SENSORS: SensorConfig[] = [
   {
     key: "vertriqe_24833_cttp",
-    name: "Hai Sang Cold Room Power Consumption",
+    name: "Hai Sang Cold Room Power",
     type: "instant",
     owner: "Hai Sang",
     description: "Cold room power consumption"
@@ -482,12 +463,8 @@ export function getTnlCumulativeSensors(): string[] {
     .map(sensor => sensor.key)
 }
 
-// Mapping for accumulated sensors to their actual sensor keys (for Weave Studio) weave = cttp
-export const ACCUMULATED_SENSOR_MAPPING: Record<string, string> = {
-  'weave_ac1_accumulated': 'vertriqe_25247_weave',
-  'weave_ac2_accumulated': 'vertriqe_25248_weave',
-  'weave_combined_accumulated': 'vertriqe_25245_weave'
-}
+// Note: ACCUMULATED_SENSOR_MAPPING removed - synthetic energy sensors are now used instead
+// Synthetic sensors are created automatically in the energy page from instant power sensors
 
 export function getZonesByOwner(owner: string): ZoneSensor[] {
   if (owner === "Weave Studio") {
