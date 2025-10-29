@@ -69,6 +69,7 @@ export default function EnergyDashboard() {
   const [tsdbConfig, setTsdbConfig] = useState<TSDBConfig | null>(null)
   const [currentUnit, setCurrentUnit] = useState("A")
   const [weatherData, setWeatherData] = useState<{ condition: string; temperature: string } | null>(null)
+  const [chartTitle, setChartTitle] = useState<string>("")
   const logo = getLogoForUser(user?.email)
   const currentDate = getCurrentFormattedDate()
 
@@ -94,23 +95,40 @@ export default function EnergyDashboard() {
   // Get sensors from centralized configuration
   const allSensors = React.useMemo(() => {
     // Convert sensor config to the format expected by the UI
-    const sensorMap: Record<string, { name: string; owner: string }> = {}
-    
+    const sensorMap: Record<string, { name: string; owner: string; type: string }> = {}
+
     if (user?.name) {
       const userSensors = getSensorsByOwner(user.name)
       userSensors.forEach(sensor => {
+        // Skip cumulative sensors
+        if (sensor.type === 'cumulative') {
+          return
+        }
+
         sensorMap[sensor.key] = {
           name: sensor.name,
-          owner: sensor.owner
+          owner: sensor.owner,
+          type: sensor.type
+        }
+
+        // For instant power sensors, create a synthetic "Energy" version
+        if (sensor.type === 'instant' && !sensor.key.includes('accumulated')) {
+          const energyKey = `${sensor.key}_energy`
+          const energyName = sensor.name.replace(/Power|Instant Energy|Average Power/gi, 'Energy Consumption')
+          sensorMap[energyKey] = {
+            name: energyName,
+            owner: sensor.owner,
+            type: 'synthetic_energy'
+          }
         }
       })
     }
-    
+
     return sensorMap
   }, [user?.name])
 
   // Filter sensors based on current user
-  const availableSensors = user?.name 
+  const availableSensors = user?.name
     ? Object.fromEntries(
         Object.entries(allSensors).filter(([_, sensor]) => sensor.owner === user.name)
       )
@@ -206,12 +224,18 @@ export default function EnergyDashboard() {
       const timeRange = timeRanges[activeTab as keyof typeof timeRanges]
       const startTimestamp = now - timeRange.seconds
 
-      // Check if this is a derived/accumulated sensor
+      // Check if this is a synthetic energy sensor or accumulated sensor
+      const isSyntheticEnergy = selectedOffice.includes('_energy')
       const isAccumulated = selectedOffice.includes('_accumulated')
+
       let actualSensorKey = selectedOffice
-      if (isAccumulated) {
+      if (isSyntheticEnergy) {
+        // Remove _energy suffix to get the original instant power sensor key
+        actualSensorKey = selectedOffice.replace('_energy', '')
+      } else if (isAccumulated) {
         actualSensorKey = ACCUMULATED_SENSOR_MAPPING[selectedOffice] || selectedOffice
       }
+
       const payload = {
         operation: "read",
         key: actualSensorKey,
@@ -236,8 +260,14 @@ export default function EnergyDashboard() {
       const result: TSDBResponse = await response.json()
       if (result.success && result.data.success) {
         const keyConfig = getKeyConfig(actualSensorKey)
-        const displayUnit = isAccumulated ? "kWh" : keyConfig.unit
+
+        // Determine display unit based on sensor type
+        let displayUnit = keyConfig.unit
+        if (isAccumulated || isSyntheticEnergy) {
+          displayUnit = "kWh"
+        }
         setCurrentUnit(displayUnit)
+
         if (!result.data.data) {
           throw new Error("No data found")
         }
@@ -251,18 +281,83 @@ export default function EnergyDashboard() {
             return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
           }
         })
+
         const values = result.data.data.map((point, index) => {
           let processedValue = point.value * keyConfig.multiplier + keyConfig.offset
+
           if (isAccumulated) {
             let accumulatedValue = 0
             for (let i = 0; i <= index; i++) {
               accumulatedValue += result.data.data[i].value * keyConfig.multiplier + keyConfig.offset
             }
             return accumulatedValue
+          } else if (isSyntheticEnergy) {
+            // Apply time-based multiplier to convert power to energy
+            let energyMultiplier = 1
+            switch (activeTab) {
+              case "60mins":
+                // Each point is 1 minute average, multiply by 1/60 to get kWh
+                energyMultiplier = 1 / 60
+                break
+              case "24hours":
+                // Each point is 1 hour average, multiply by 1 to get kWh
+                energyMultiplier = 1
+                break
+              case "30days":
+                // Each point is 1 day average, multiply by 24 to get kWh
+                energyMultiplier = 24
+                break
+              case "12months":
+                // Each point is ~30 days average, multiply by 24*30 to get kWh
+                energyMultiplier = 24 * 30
+                break
+            }
+            return processedValue * energyMultiplier
           }
+
           return processedValue
         })
         const sensorName = availableSensors[selectedOffice as keyof typeof availableSensors]?.name || selectedOffice
+
+        // Generate chart title based on sensor type and time range
+        let timeRangeTitle = ""
+        if (isAccumulated || isSyntheticEnergy) {
+          // Accumulated or synthetic energy sensor readings
+          switch (activeTab) {
+            case "60mins":
+              timeRangeTitle = "Energy Consumed Every Minute"
+              break
+            case "24hours":
+              timeRangeTitle = "Energy Consumed Every Hour"
+              break
+            case "30days":
+              timeRangeTitle = "Energy Consumed Every Day"
+              break
+            case "12months":
+              timeRangeTitle = "Energy Consumed Every Month"
+              break
+          }
+        } else {
+          // Instant sensor readings
+          switch (activeTab) {
+            case "60mins":
+              timeRangeTitle = "Average of Every Minute"
+              break
+            case "24hours":
+              timeRangeTitle = "Average of Every Hour"
+              break
+            case "30days":
+              timeRangeTitle = "Average of Every Day"
+              break
+            case "12months":
+              timeRangeTitle = "Average of Every Month"
+              break
+          }
+        }
+
+        // Set the chart title
+        setChartTitle(timeRangeTitle)
+
         setChartData({
           labels,
           datasets: [{
@@ -424,7 +519,12 @@ export default function EnergyDashboard() {
             ) : chartData ? (
               <div className="h-96">
                 <div className="flex justify-between items-center mb-4">
-                  <div className="text-sm text-slate-400">{currentUnit}</div>
+                  <div className="flex flex-col gap-1">
+                    <div className="text-sm text-slate-400">{currentUnit}</div>
+                    {chartTitle && (
+                      <div className="text-lg font-semibold text-white">{chartTitle}</div>
+                    )}
+                  </div>
                   <Button
                     onClick={handleExportData}
                     variant="outline"

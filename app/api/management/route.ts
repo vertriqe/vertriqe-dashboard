@@ -176,6 +176,8 @@ export async function GET() {
             image: "/placeholder.svg?height=200&width=400",
             savingModeEnabled: zone.savingModeEnabled,
             lastUpdate: lastUpdateTimestamp * 1000, // Convert to milliseconds for JavaScript Date
+            tempSensor: zone.tempSensor,
+            humSensor: zone.humSensor
           }
         } catch (error) {
           console.error(`Error processing zone ${zone.id}:`, error)
@@ -183,10 +185,12 @@ export async function GET() {
             id: zone.id,
             name: zone.name,
             temperature: "N/A",
-            humidity: "N/A", 
+            humidity: "N/A",
             image: "/placeholder.svg?height=200&width=400",
             savingModeEnabled: zone.savingModeEnabled,
             lastUpdate: Date.now(), // Use current time as fallback
+            tempSensor: zone.tempSensor,
+            humSensor: zone.humSensor
           }
         }
       })

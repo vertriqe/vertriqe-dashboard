@@ -20,42 +20,42 @@ export interface ZoneSensor {
 export const WEAVE_SENSORS: SensorConfig[] = [
   {
     key: "vertriqe_25247_weave",
-    name: "AC 1 - Instant Energy",
+    name: "AC 1 - Average Power",
     type: "instant",
     owner: "Weave Studio",
-    description: "Air conditioner 1 instant power consumption"
+    description: "Air conditioner 1 average power consumption"
   },
   {
     key: "vertriqe_25248_weave",
-    name: "AC 2 - Instant Energy",
-    type: "instant", 
+    name: "AC 2 - Average Power",
+    type: "instant",
     owner: "Weave Studio",
     description: "Air conditioner 2 instant power consumption"
   },
   {
     key: "vertriqe_25245_weave",
-    name: "Combined - Instant Energy",
+    name: "Combined - Average Power",
     type: "instant",
     owner: "Weave Studio", 
     description: "Combined instant power consumption"
   },
   {
     key: "weave_ac1_accumulated",
-    name: "AC 1 - Accumulated Energy",
+    name: "AC 1 - Energy Consumption",
     type: "accumulated",
     owner: "Weave Studio",
     description: "Air conditioner 1 accumulated energy consumption"
   },
   {
     key: "weave_ac2_accumulated", 
-    name: "AC 2 - Accumulated Energy",
+    name: "AC 2 - Energy Consumption",
     type: "accumulated",
     owner: "Weave Studio",
     description: "Air conditioner 2 accumulated energy consumption"
   },
   {
     key: "weave_combined_accumulated",
-    name: "Combined - Accumulated Energy", 
+    name: "Combined - Energy Consumption",
     type: "accumulated",
     owner: "Weave Studio",
     description: "Combined accumulated energy consumption"
@@ -73,7 +73,7 @@ export const HUNT_SENSORS: SensorConfig[] = [
   },
   {
     key: "vertriqe_25120_cttp", 
-    name: "Area 1 - Instant Energy (25120)",
+    name: "Area 1 - Instant Power (25120)",
     type: "instant",
     owner: "The Hunt",
     description: "Area 1 instant power consumption"
@@ -87,7 +87,7 @@ export const HUNT_SENSORS: SensorConfig[] = [
   },
   {
     key: "vertriqe_25121_cttp",
-    name: "Area 2 - Instant Energy (25121)",
+    name: "Area 2 - Instant Power (25121)",
     type: "instant",
     owner: "The Hunt", 
     description: "Area 2 instant power consumption"
@@ -101,7 +101,7 @@ export const HUNT_SENSORS: SensorConfig[] = [
   },
   {
     key: "vertriqe_25122_cttp",
-    name: "Area 3 - Instant Energy (25122)",
+    name: "Area 3 - Instant Power (25122)",
     type: "instant", 
     owner: "The Hunt",
     description: "Area 3 instant power consumption"
@@ -115,7 +115,7 @@ export const HUNT_SENSORS: SensorConfig[] = [
   },
   {
     key: "vertriqe_25123_cttp",
-    name: "Area 4 - Instant Energy (25123)", 
+    name: "Area 4 - Instant Power (25123)", 
     type: "instant",
     owner: "The Hunt",
     description: "Area 4 instant power consumption"
@@ -129,7 +129,7 @@ export const HUNT_SENSORS: SensorConfig[] = [
   },
   {
     key: "vertriqe_25124_cttp",
-    name: "Area 5 - Instant Energy (25124)",
+    name: "Area 5 - Instant Power (25124)",
     type: "instant",
     owner: "The Hunt",
     description: "Area 5 instant power consumption"
@@ -183,7 +183,36 @@ export const TNL_SENSORS: SensorConfig[] = [
     type: "instant",
     owner: "TNL",
     description: "Sensor 2 instantaneous power consumption"
-  }
+  },
+  // Room ambient sensors
+  { key: "vertriqe_25420_amb_temp", name: "Room 1503 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25420_amb_hum", name: "Room 1503 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25423_amb_temp", name: "Room 1505 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25423_amb_hum", name: "Room 1505 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25429_amb_temp", name: "Room 1603 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25429_amb_hum", name: "Room 1603 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25432_amb_temp", name: "Room 1605 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25432_amb_hum", name: "Room 1605 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25435_amb_temp", name: "Room 1703 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25435_amb_hum", name: "Room 1703 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25438_amb_temp", name: "Room 1705 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25438_amb_hum", name: "Room 1705 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25381_amb_temp", name: "Room 1803 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25381_amb_hum", name: "Room 1803 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25378_amb_temp", name: "Room 1805 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25378_amb_hum", name: "Room 1805 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25414_amb_temp", name: "Room 1903 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25414_amb_hum", name: "Room 1903 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25426_amb_temp", name: "Room 1905 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25426_amb_hum", name: "Room 1905 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25441_amb_temp", name: "Room 2003 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25441_amb_hum", name: "Room 2003 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25444_amb_temp", name: "Room 2005 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25444_amb_hum", name: "Room 2005 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25408_amb_temp", name: "Room 2102 - Ambient Temperature", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25408_amb_hum", name: "Room 2102 - Ambient Humidity", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25411_amb_temp", name: "Room 2102 - Ambient Temperature (Alt)", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25411_amb_hum", name: "Room 2102 - Ambient Humidity (Alt)", type: "instant", owner: "TNL" }
 ]
 
 // About Coffee Jeju sensor configurations
@@ -401,20 +430,20 @@ function generateAboutCoffeeZones(): ZoneSensor[] {
 export const ABOUT_COFFEE_ZONES: ZoneSensor[] = generateAboutCoffeeZones()
 
 export const TNL_ZONES: ZoneSensor[] = [
-  {
-    id: 1,
-    name: "Sensor 1",
-    tempSensor: "",
-    humSensor: "",
-    savingModeEnabled: false,
-  },
-  {
-    id: 2,
-    name: "Sensor 2",
-    tempSensor: "",
-    humSensor: "",
-    savingModeEnabled: false,
-  }
+  { id: 1, name: "Room 1503", tempSensor: "vertriqe_25420_amb_temp", humSensor: "vertriqe_25420_amb_hum", savingModeEnabled: false },
+  { id: 2, name: "Room 1505", tempSensor: "vertriqe_25423_amb_temp", humSensor: "vertriqe_25423_amb_hum", savingModeEnabled: false },
+  { id: 3, name: "Room 1603", tempSensor: "vertriqe_25429_amb_temp", humSensor: "vertriqe_25429_amb_hum", savingModeEnabled: false },
+  { id: 4, name: "Room 1605", tempSensor: "vertriqe_25432_amb_temp", humSensor: "vertriqe_25432_amb_hum", savingModeEnabled: false },
+  { id: 5, name: "Room 1703", tempSensor: "vertriqe_25435_amb_temp", humSensor: "vertriqe_25435_amb_hum", savingModeEnabled: false },
+  { id: 6, name: "Room 1705", tempSensor: "vertriqe_25438_amb_temp", humSensor: "vertriqe_25438_amb_hum", savingModeEnabled: false },
+  { id: 7, name: "Room 1803", tempSensor: "vertriqe_25381_amb_temp", humSensor: "vertriqe_25381_amb_hum", savingModeEnabled: false },
+  { id: 8, name: "Room 1805", tempSensor: "vertriqe_25378_amb_temp", humSensor: "vertriqe_25378_amb_hum", savingModeEnabled: false },
+  { id: 9, name: "Room 1903", tempSensor: "vertriqe_25414_amb_temp", humSensor: "vertriqe_25414_amb_hum", savingModeEnabled: false },
+  { id: 10, name: "Room 1905", tempSensor: "vertriqe_25426_amb_temp", humSensor: "vertriqe_25426_amb_hum", savingModeEnabled: false },
+  { id: 11, name: "Room 2003", tempSensor: "vertriqe_25441_amb_temp", humSensor: "vertriqe_25441_amb_hum", savingModeEnabled: false },
+  { id: 12, name: "Room 2005", tempSensor: "vertriqe_25444_amb_temp", humSensor: "vertriqe_25444_amb_hum", savingModeEnabled: false },
+  { id: 13, name: "Room 2102", tempSensor: "vertriqe_25408_amb_temp", humSensor: "vertriqe_25408_amb_hum", savingModeEnabled: false },
+  { id: 14, name: "Room 2102 (Alt)", tempSensor: "vertriqe_25411_amb_temp", humSensor: "vertriqe_25411_amb_hum", savingModeEnabled: false }
 ]
 
 // Combined sensor configurations
@@ -433,9 +462,6 @@ export function getSensorByKey(key: string): SensorConfig | undefined {
   return ALL_SENSORS.find(sensor => sensor.key === key)
 }
 
-export function getWeaveSensorKeys(): string[] {
-  return WEAVE_SENSORS.map(sensor => sensor.key)
-}
 
 export function getWeaveDashboardSensors(): string[] {
   // Return only the instant energy sensors for dashboard aggregation

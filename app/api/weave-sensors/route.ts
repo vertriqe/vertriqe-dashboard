@@ -97,8 +97,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error("Error fetching Weave Studio sensor data:", error)
-    return NextResponse.json(
-      { 
+    return NextResponse.json({
         success: false, 
         error: "Failed to fetch sensor data",
         data: []

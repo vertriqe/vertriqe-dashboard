@@ -27,6 +27,8 @@ interface ManagementData {
     image: string
     savingModeEnabled: boolean
     lastUpdate: number
+    tempSensor: string
+    humSensor: string
   }[]
 }
 
@@ -37,7 +39,7 @@ export default function ManagementPage() {
   const [managementData, setManagementData] = useState<ManagementData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSavingModeUpdating, setIsSavingModeUpdating] = useState(false)
-  const { user } = useUser()
+  const { user, isSuperAdmin } = useUser()
   const logo = getLogoForUser(user?.email)
   const currentDate = getCurrentFormattedDate()
   const isHuntUser = user?.name === "The Hunt"
@@ -109,6 +111,13 @@ export default function ManagementPage() {
     return zone?.savingModeEnabled || false
   }
 
+  const endTs = Math.floor(Date.now() / 1000)
+  // Generate GTSDB embed URL
+  const getGtsdbUrl = (sensorKey: string) => {
+    const apiUrl = encodeURIComponent("http://35.221.150.154:5556")
+    return `https://gtsdb-admin.vercel.app/embed?key=${sensorKey}&apiUrl=${apiUrl}&start=1&end=${endTs}&downsampling=300&aggregation=avg`
+  }
+//<iframe src="https://gtsdb-admin.vercel.app/embed?key=vertriqe_25420_amb_hum&apiUrl=http%3A%2F%2F35.221.150.154%3A5556&start=1&end=1761740805&downsampling=300&aggregation=avg" width="600" height="400" frameborder="0" style="border: 1px solid #ddd; border-radius: 4px;"></iframe>
   if (isLoading || !managementData) {
     return (
       <div className="bg-slate-900 min-h-screen flex justify-center items-center">
@@ -181,14 +190,41 @@ export default function ManagementPage() {
                 </div>
                 <div className="flex justify-between items-end">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center">
-                      <Thermometer className="h-5 w-5 mr-1" />
-                      <span className="text-lg">{zone.temperature}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Droplets className="h-5 w-5 mr-1" />
-                      <span className="text-lg">{zone.humidity}</span>
-                    </div>
+                    {isSuperAdmin ? (
+                      <>
+                        <a
+                          href={getGtsdbUrl(zone.tempSensor)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center hover:text-cyan-400 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Thermometer className="h-5 w-5 mr-1" />
+                          <span className="text-lg underline decoration-dotted">{zone.temperature}</span>
+                        </a>
+                        <a
+                          href={getGtsdbUrl(zone.humSensor)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center hover:text-cyan-400 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Droplets className="h-5 w-5 mr-1" />
+                          <span className="text-lg underline decoration-dotted">{zone.humidity}</span>
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center">
+                          <Thermometer className="h-5 w-5 mr-1" />
+                          <span className="text-lg">{zone.temperature}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Droplets className="h-5 w-5 mr-1" />
+                          <span className="text-lg">{zone.humidity}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="text-xs text-slate-300">
                     Last updated: {new Date(zone.lastUpdate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

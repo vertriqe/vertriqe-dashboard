@@ -154,14 +154,27 @@ async function generateBaselineForecast(
         baselineEnergy = regression.slope * Math.log(temperature) + regression.intercept
       }
 
+      // Determine if we need to multiply by 24 based on energy key type
+      // Cumulative sensors (cctp) predict daily kWh directly
+      // Instant power sensors (weave, cttp) predict hourly kW and need × 24 for daily kWh
+      const energyKey = Array.isArray(baseline.energyKey) ? baseline.energyKey[0] : baseline.energyKey
+      const isInstantPower = energyKey && (energyKey.includes('_weave') || energyKey.includes('_cttp'))
+
       const baselineEnergyBeforeMultiply = baselineEnergy
-      baselineEnergy *= 24 // Convert to daily energy
+      if (isInstantPower) {
+        baselineEnergy *= 24 // Convert hourly kW to daily kWh for instant power sensors
+      }
 
       if (idx === 0) {
         console.log(`   First baseline calculation:`)
         console.log(`     Temperature: ${temperature.toFixed(2)}°C`)
-        console.log(`     Baseline (hourly): ${baselineEnergyBeforeMultiply.toFixed(2)} kWh`)
-        console.log(`     Baseline (daily, ×24): ${baselineEnergy.toFixed(2)} kWh`)
+        console.log(`     Energy key: ${energyKey} (${isInstantPower ? 'instant power' : 'cumulative energy'})`)
+        if (isInstantPower) {
+          console.log(`     Baseline (hourly kW): ${baselineEnergyBeforeMultiply.toFixed(2)} kW`)
+          console.log(`     Baseline (daily kWh, ×24): ${baselineEnergy.toFixed(2)} kWh`)
+        } else {
+          console.log(`     Baseline (daily kWh): ${baselineEnergy.toFixed(2)} kWh`)
+        }
       }
 
       return Math.max(0, baselineEnergy) // Ensure non-negative
@@ -726,12 +739,28 @@ export async function GET() {
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })
       })
 
+      // For The Hunt, filter out data points where actual usage > 300kWh
+      let filteredLabels = dateLabels
+      let filteredActualUsage = metrics.actualUsage
+      let filteredBaselineForecast = metrics.baselineForecast
+
+      if (user.name === "The Hunt") {
+        const validIndices = metrics.actualUsage
+          .map((value, index) => (value !== null && value <= 300) ? index : -1)
+          .filter(index => index !== -1)
+
+        filteredLabels = validIndices.map(i => dateLabels[i])
+        filteredActualUsage = validIndices.map(i => metrics.actualUsage[i])
+        filteredBaselineForecast = validIndices.map(i => metrics.baselineForecast[i])
+
+        console.log(`🔧 The Hunt data filtering: ${metrics.actualUsage.length} points -> ${filteredActualUsage.length} points (removed ${metrics.actualUsage.length - filteredActualUsage.length} points > 300kWh)`)
+      }
 
       energyUsageData = {
-        labels: dateLabels.length > 0 ? dateLabels : ["No Data"],
-        actualUsage: metrics.actualUsage, // Always use processed sum (all five sensors for The Hunt)
+        labels: filteredLabels.length > 0 ? filteredLabels : ["No Data"],
+        actualUsage: filteredActualUsage, // Always use processed sum (all five sensors for The Hunt)
         energyForecast: [], // Empty for real data users
-        baselineForecast: metrics.baselineForecast, // Always uses manual model if present
+        baselineForecast: filteredBaselineForecast, // Always uses manual model if present
       }
 
       energySavingsData = {

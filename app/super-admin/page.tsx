@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -75,6 +75,8 @@ export default function SuperAdminPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [data, setData] = useState<DataPoint[]>([])
+  const [originalData, setOriginalData] = useState<DataPoint[]>([]) // Keep original data for reset
+  const [removedIndices, setRemovedIndices] = useState<Set<number>>(new Set())
   const [regressions, setRegressions] = useState<RegressionResult[]>([])
   const [bestRegression, setBestRegression] = useState<RegressionResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -94,6 +96,34 @@ export default function SuperAdminPage() {
   const [manualB, setManualB] = useState<string>("")
   const [manualC, setManualC] = useState<string>("")
   const [manualError, setManualError] = useState<string | null>(null)
+  // Handle removing a data point (outlier)
+  const handleRemoveDataPoint = (index: number) => {
+    setRemovedIndices(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        // If already removed, restore it
+        newSet.delete(index)
+      } else {
+        // Remove it
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }
+
+  // Reset all removed data points
+  const handleResetDataPoints = () => {
+    setRemovedIndices(new Set())
+  }
+
+  // Filter data based on removed indices
+  React.useEffect(() => {
+    if (originalData.length > 0) {
+      const filtered = originalData.filter((_, index) => !removedIndices.has(index))
+      setData(filtered)
+    }
+  }, [removedIndices, originalData])
+
   // Remove all manually added regression curves
   const clearManualCurves = () => {
     setRegressions(prev => {
@@ -124,7 +154,9 @@ export default function SuperAdminPage() {
   const sites = [
     { value: "hunt", label: "The Hunt", energyKey: ["vertriqe_25120_cctp","vertriqe_25121_cctp","vertriqe_25122_cctp","vertriqe_25123_cctp","vertriqe_25124_cctp"], tempKey: "weather_thehunt_temp_c" },
     { value: "weave", label: "Weave Studio", energyKey: ["vertriqe_25245_weave"], tempKey: "weather_thehunt_temp_c" },
-    { value: "haisang", label: "Hai Sang", energyKey: ["vertriqe_24833_cctp"], tempKey: "weather_thehunt_temp_c" }
+    { value: "haisang", label: "Hai Sang", energyKey: ["vertriqe_24833_cctp"], tempKey: "weather_thehunt_temp_c" },
+    { value: "tnl", label: "TNL", energyKey: ["vertriqe_25415_cctp", "vertriqe_25416_cctp"], tempKey: "weather_thehunt_temp_c" },
+    { value: "coffee", label: "About Coffee Jeju", energyKey: ["vertriqe_25327_temperature"], tempKey: "weather_thehunt_temp_c" }
   ]
 
   // Function to get the appropriate multiplier, unit, and offset for a key
@@ -822,7 +854,7 @@ export default function SuperAdminPage() {
 
             <div className="space-y-2">
               <Label className="text-white">Actions</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   onClick={fetchData}
                   disabled={!selectedSite || !startDate || !endDate || isLoading}
@@ -839,6 +871,15 @@ export default function SuperAdminPage() {
                   <Calculator className="h-4 w-4 mr-2" />
                   Calculate
                 </Button>
+                {removedIndices.size > 0 && (
+                  <Button
+                    onClick={handleResetDataPoints}
+                    variant="outline"
+                    className="border-orange-600 text-orange-400 hover:bg-orange-900/20"
+                  >
+                    Reset {removedIndices.size} Removed Point{removedIndices.size > 1 ? 's' : ''}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -883,6 +924,10 @@ export default function SuperAdminPage() {
               <Card className="bg-slate-900/50 border-slate-600">
                 <CardHeader>
                   <CardTitle className="text-white">Energy vs Temperature</CardTitle>
+                  <p className="text-sm text-slate-400 mt-2">
+                    Click on data points to remove outliers. Removed points appear as red crosses.
+                    {removedIndices.size > 0 && ` (${removedIndices.size} point${removedIndices.size > 1 ? 's' : ''} removed)`}
+                  </p>
                 </CardHeader>
                 <CardContent>
                   <div className="h-96">
@@ -891,14 +936,33 @@ export default function SuperAdminPage() {
                       data={{
                         datasets: [
                           {
-                            label: "Energy vs Temperature",
-                            data: data.map(point => ({
-                              x: point.temperature,
-                              y: point.energy
-                            })),
+                            label: "Energy vs Temperature (Active)",
+                            data: originalData
+                              .map((point, index) => ({
+                                x: point.temperature,
+                                y: point.energy,
+                                originalIndex: index
+                              }))
+                              .filter((_, index) => !removedIndices.has(index)),
                             backgroundColor: "rgba(34, 211, 238, 0.6)",
                             borderColor: "rgba(34, 211, 238, 1)",
-                            pointRadius: 4,
+                            pointRadius: 5,
+                            showLine: false,
+                            type: 'scatter' as const
+                          },
+                          {
+                            label: "Removed Outliers",
+                            data: originalData
+                              .map((point, index) => ({
+                                x: point.temperature,
+                                y: point.energy,
+                                originalIndex: index
+                              }))
+                              .filter((_, index) => removedIndices.has(index)),
+                            backgroundColor: "rgba(239, 68, 68, 0.4)",
+                            borderColor: "rgba(239, 68, 68, 0.8)",
+                            pointRadius: 5,
+                            pointStyle: 'cross',
                             showLine: false,
                             type: 'scatter' as const
                           },
@@ -953,9 +1017,39 @@ export default function SuperAdminPage() {
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
+                        onClick: (event: any, elements: any) => {
+                          if (elements.length > 0) {
+                            const element = elements[0]
+                            // Handle clicks on both active points (dataset 0) and removed points (dataset 1)
+                            if (element.datasetIndex === 0 || element.datasetIndex === 1) {
+                              const dataset = element.datasetIndex === 0
+                                ? originalData.filter((_, index) => !removedIndices.has(index))
+                                : originalData.filter((_, index) => removedIndices.has(index))
+
+                              const clickedPoint = dataset[element.index]
+                              // Find the original index in originalData
+                              const originalIndex = originalData.findIndex(
+                                p => p.temperature === clickedPoint.temperature && p.energy === clickedPoint.energy
+                              )
+                              if (originalIndex !== -1) {
+                                handleRemoveDataPoint(originalIndex)
+                              }
+                            }
+                          }
+                        },
                         plugins: {
                           legend: {
                             labels: { color: 'white' }
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: (context: any) => {
+                                if (context.datasetIndex === 0) {
+                                  return `Temperature: ${context.parsed.x.toFixed(2)}°C, Energy: ${context.parsed.y.toFixed(2)} (Click to remove)`
+                                }
+                                return context.dataset.label
+                              }
+                            }
                           }
                         },
                         scales: {
@@ -1392,7 +1486,9 @@ export default function SuperAdminPage() {
       console.log(`[DEBUG] Combined daily points: ${combined.length}`)
       console.log(`[DEBUG] Sample combined data:`, combined.slice(0, 3))
 
+      setOriginalData(combined) // Store original data
       setData(combined)
+      setRemovedIndices(new Set()) // Reset removed indices
       setRegressions([]) // Reset regressions when new data is loaded
       setBestRegression(null)
       setSelectedRegressionIndex(null) // Reset selection
