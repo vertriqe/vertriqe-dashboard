@@ -208,7 +208,7 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
     console.log(`📊 Hunt sensors to fetch: ${huntCumulativeSensors.length} sensors (${huntCumulativeSensors.join(', ')})`)
     
     const now = Math.floor(Date.now() / 1000)
-    const thirtyDaysAgo = now - (30 * 24 * 3600) // 30 days in seconds
+    const ninetyDaysAgo = now - (90 * 24 * 3600) // 90 days in seconds
     
     // Fetch data for all cumulative sensors
     const sensorPromises = huntCumulativeSensors.map(async (sensorKey) => {
@@ -216,7 +216,7 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
         operation: "read",
         key: sensorKey,
         Read: {
-          start_timestamp: thirtyDaysAgo,
+          start_timestamp: ninetyDaysAgo,
           end_timestamp: now,
           downsampling: 86400, // Daily aggregation
           aggregation: "max" // Use max to get daily peak values
@@ -325,7 +325,7 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
     const weaveSensors = getWeaveDashboardSensors()
     
     const now = Math.floor(Date.now() / 1000)
-    const thirtyDaysAgo = now - (30 * 24 * 3600) // 30 days in seconds
+    const ninetyDaysAgo = now - (90 * 24 * 3600) // 90 days in seconds
     
     // Fetch data for each sensor
     const sensorPromises = weaveSensors.map(async (sensorKey) => {
@@ -333,7 +333,7 @@ async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
         operation: "read",
         key: sensorKey,
         Read: {
-          start_timestamp: thirtyDaysAgo,
+          start_timestamp: ninetyDaysAgo,
           end_timestamp: now,
           downsampling: 86400, // Daily aggregation
           aggregation: "avg"    // Sum for energy consumption
@@ -437,8 +437,8 @@ async function fetchTnlSensorData(): Promise<TnlSensorData[]> {
     console.log(`📊 TNL sensors to fetch: ${tnlCumulativeSensors.join(', ')}`)
 
     const now = Math.floor(Date.now() / 1000)
-    const thirtyDaysAgo = now - (30 * 24 * 3600) // 30 days in seconds
-    console.log(`⏰ Fetching TNL data from ${new Date(thirtyDaysAgo * 1000).toISOString()} to ${new Date(now * 1000).toISOString()}`)
+    const ninetyDaysAgo = now - (90 * 24 * 3600) // 90 days in seconds
+    console.log(`⏰ Fetching TNL data from ${new Date(ninetyDaysAgo * 1000).toISOString()} to ${new Date(now * 1000).toISOString()}`)
 
     // Fetch data for all cumulative sensors
     const sensorPromises = tnlCumulativeSensors.map(async (sensorKey) => {
@@ -446,7 +446,7 @@ async function fetchTnlSensorData(): Promise<TnlSensorData[]> {
         operation: "read",
         key: sensorKey,
         Read: {
-          start_timestamp: thirtyDaysAgo,
+          start_timestamp: ninetyDaysAgo,
           end_timestamp: now,
           downsampling: 86400, // Daily aggregation
           aggregation: "max" // Use max to get daily peak values
@@ -733,7 +733,7 @@ export async function GET() {
       console.log(`   Baseline forecast points: ${metrics.baselineForecast.length}`)
       console.log(`   Latest cumulative: ${metrics.latestCumulative}`)
 
-      // Generate date labels for the last 30 days
+      // Generate date labels for the last 90 days
       const dateLabels = sensorData.map(point => {
         const date = new Date(point.timestamp * 1000)
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })

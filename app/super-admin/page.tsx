@@ -96,6 +96,12 @@ export default function SuperAdminPage() {
   const [manualB, setManualB] = useState<string>("")
   const [manualC, setManualC] = useState<string>("")
   const [manualError, setManualError] = useState<string | null>(null)
+  // Optimization state
+  const [targetNonACKwh, setTargetNonACKwh] = useState<string>("")
+  const [optimizationResults, setOptimizationResults] = useState<any>(null)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+  const [optimizationError, setOptimizationError] = useState<string | null>(null)
+  const [selectedModelType, setSelectedModelType] = useState<string>("")
   // Handle removing a data point (outlier)
   const handleRemoveDataPoint = (index: number) => {
     setRemovedIndices(prev => {
@@ -576,6 +582,60 @@ export default function SuperAdminPage() {
     window.URL.revokeObjectURL(url)
   }
 
+  // Optimize regression model to minimize deviation from target Non-AC kWh
+  const optimizeRegressionModel = async () => {
+    if (!billAnalysis?.rows || billAnalysis.rows.length === 0) {
+      setOptimizationError("Please analyze bill data first to generate monthly breakdown")
+      return
+    }
+
+    const target = parseFloat(targetNonACKwh)
+    if (isNaN(target) || target < 0) {
+      setOptimizationError("Please enter a valid target Non-AC kWh value")
+      return
+    }
+
+    setIsOptimizing(true)
+    setOptimizationError(null)
+
+    try {
+      // Prepare data for optimization API
+      const dataPoints = billAnalysis.rows.map((row: any) => ({
+        temperature: row.temperature,
+        kwh: row.totalKwh,
+        date: row.date,
+        usedHourlyData: row.usedHourlyData,
+        hourlyTemps: row.hourlyTemps
+      }))
+
+      const response = await fetch('/api/optimize-regression', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          data: dataPoints,
+          targetNonACKwh: target
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to optimize regression model')
+      }
+
+      const result = await response.json()
+      setOptimizationResults(result)
+      // Set the best model as the initial selection
+      setSelectedModelType(result.bestModel.model.type)
+
+    } catch (err) {
+      setOptimizationError(err instanceof Error ? err.message : "Failed to optimize regression model")
+    } finally {
+      setIsOptimizing(false)
+    }
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-3">
@@ -802,6 +862,679 @@ export default function SuperAdminPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Non-AC kWh Optimization */}
+      {billAnalysis && (
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Calculator className="h-6 w-6 text-green-500" />
+              <CardTitle className="text-white">Non-AC kWh Optimization</CardTitle>
+            </div>
+            <p className="text-sm text-slate-400 mt-2">
+              Find the best regression model to minimize absolute deviation from your target Non-AC kWh baseline.
+              Switch between models to preview different regression approaches.
+            </p>
+            <div className="bg-blue-900/20 border border-blue-700/50 rounded p-3 text-xs text-blue-300">
+              <strong>How it works:</strong> For each month, calculates Target AC kWh = Total kWh - Target Non-AC kWh (constant).
+              Then fits regression models (Linear, Quadratic, Logarithmic, Exponential) to predict AC usage based on temperature.
+              The best model minimizes the mean absolute deviation from your target across all months.
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Target Input */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <Label htmlFor="targetNonAC" className="text-white">
+                  Target Non-AC kWh (Monthly)
+                </Label>
+                <Input
+                  id="targetNonAC"
+                  type="number"
+                  value={targetNonACKwh}
+                  onChange={(e) => setTargetNonACKwh(e.target.value)}
+                  placeholder="e.g., 1000"
+                  className="bg-slate-700 border-slate-600 text-white"
+                  min="0"
+                  step="0.01"
+                />
+                <p className="text-xs text-slate-500">
+                  Current average: {billAnalysis.totals.nonACKwh ?
+                    (billAnalysis.totals.nonACKwh / billAnalysis.rows.length).toFixed(2) : '0'} kWh
+                </p>
+              </div>
+
+              <Button
+                onClick={optimizeRegressionModel}
+                disabled={isOptimizing || !targetNonACKwh}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isOptimizing ? "Optimizing..." : "Find Best Model"}
+              </Button>
+
+              {optimizationResults && (
+                <Button
+                  onClick={() => {
+                    setOptimizationResults(null)
+                    setTargetNonACKwh("")
+                  }}
+                  variant="outline"
+                  className="border-slate-600"
+                >
+                  Clear Results
+                </Button>
+              )}
+            </div>
+
+            {optimizationError && (
+              <div className="bg-red-900/20 border border-red-700 rounded p-3 text-red-400 text-sm">
+                {optimizationError}
+              </div>
+            )}
+
+            {/* Custom Equation Input */}
+            {optimizationResults && (
+              <Card className="bg-slate-600/30 border-slate-500">
+                <CardHeader>
+                  <CardTitle className="text-md text-white">Add Custom Equation (Optional)</CardTitle>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Input your own regression coefficients to test a custom model
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-white text-sm">Model Type</Label>
+                      <Select value={manualType} onValueChange={(value: any) => setManualType(value)}>
+                        <SelectTrigger className="bg-slate-700 border-slate-600">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-700 border-slate-600">
+                          <SelectItem value="linear">Linear: slope × T + intercept</SelectItem>
+                          <SelectItem value="quadratic">Quadratic: a × T² + b × T + c</SelectItem>
+                          <SelectItem value="logarithmic">Logarithmic: a × ln(T) + b</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {manualType === 'linear' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-white text-sm">Slope</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={manualA}
+                          onChange={(e) => setManualA(e.target.value)}
+                          placeholder="e.g., 45.5"
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-white text-sm">Intercept</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={manualB}
+                          onChange={(e) => setManualB(e.target.value)}
+                          placeholder="e.g., -500"
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {manualType === 'quadratic' && (
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-white text-sm">a (T²)</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={manualA}
+                          onChange={(e) => setManualA(e.target.value)}
+                          placeholder="e.g., 2.5"
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-white text-sm">b (T)</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={manualB}
+                          onChange={(e) => setManualB(e.target.value)}
+                          placeholder="e.g., -50"
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-white text-sm">c (constant)</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={manualC}
+                          onChange={(e) => setManualC(e.target.value)}
+                          placeholder="e.g., 500"
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {manualType === 'logarithmic' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-white text-sm">a (coefficient)</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={manualA}
+                          onChange={(e) => setManualA(e.target.value)}
+                          placeholder="e.g., 300"
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-white text-sm">b (constant)</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={manualB}
+                          onChange={(e) => setManualB(e.target.value)}
+                          placeholder="e.g., -800"
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={() => {
+                      // Generate unique ID for custom model
+                      const customId = `custom_${manualType}_${Date.now()}`
+
+                      // Add custom model to results
+                      const customModel = {
+                        type: manualType,
+                        customId: customId,
+                        isCustom: true,
+                        slope: manualType === 'linear' ? parseFloat(manualA) : undefined,
+                        intercept: manualType === 'linear' ? parseFloat(manualB) : undefined,
+                        coefficients: manualType === 'quadratic' ? {
+                          a: parseFloat(manualA),
+                          b: parseFloat(manualB),
+                          c: parseFloat(manualC)
+                        } : manualType === 'logarithmic' ? {
+                          a: parseFloat(manualA),
+                          b: parseFloat(manualB)
+                        } : undefined,
+                        rSquared: 0 // Will be calculated
+                      }
+
+                      // Calculate monthly results for custom model
+                      const monthlyResults = billAnalysis.rows.map((row: any) => {
+                        const date = new Date(row.date)
+                        const hoursInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate() * 24
+                        let hourlyACPower = 0
+
+                        if (customModel.type === 'linear') {
+                          hourlyACPower = (customModel.slope || 0) * row.temperature + (customModel.intercept || 0)
+                        } else if (customModel.type === 'quadratic') {
+                          const { a = 0, b = 0, c = 0 } = customModel.coefficients || {}
+                          hourlyACPower = a * row.temperature * row.temperature + b * row.temperature + c
+                        } else if (customModel.type === 'logarithmic') {
+                          const { a = 0, b = 0 } = customModel.coefficients || {}
+                          hourlyACPower = row.temperature > 0 ? a * Math.log(row.temperature) + b : 0
+                        }
+
+                        const expectedACKwh = Math.max(0, hourlyACPower * hoursInMonth)
+                        const nonACKwh = row.totalKwh - expectedACKwh
+                        const deviation = Math.abs(nonACKwh - parseFloat(targetNonACKwh))
+                        const isValid = expectedACKwh > 0 && expectedACKwh < row.totalKwh
+
+                        return {
+                          date: row.date,
+                          totalKwh: row.totalKwh,
+                          expectedACKwh,
+                          nonACKwh,
+                          deviation,
+                          temperature: row.temperature,
+                          isValid
+                        }
+                      })
+
+                      const totalDeviation = monthlyResults.reduce((sum: number, m: any) => sum + m.deviation, 0)
+                      const meanDeviation = totalDeviation / monthlyResults.length
+                      const invalidMonthsCount = monthlyResults.filter((m: any) => !m.isValid).length
+
+                      const customResult = {
+                        model: customModel,
+                        monthlyResults,
+                        totalDeviation,
+                        meanDeviation,
+                        rmse: meanDeviation,
+                        maxDeviation: Math.max(...monthlyResults.map((m: any) => m.deviation)),
+                        minDeviation: Math.min(...monthlyResults.map((m: any) => m.deviation)),
+                        isValid: invalidMonthsCount === 0,
+                        invalidMonthsCount
+                      }
+
+                      // Add to optimization results
+                      setOptimizationResults({
+                        ...optimizationResults,
+                        results: [...optimizationResults.results, customResult]
+                      })
+
+                      // Select the custom model using its unique ID
+                      setSelectedModelType(customId)
+
+                      // Clear inputs
+                      setManualA("")
+                      setManualB("")
+                      setManualC("")
+                    }}
+                    disabled={!manualA || !manualB || (manualType === 'quadratic' && !manualC)}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    Add Custom Model
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Optimization Results */}
+            {optimizationResults && (
+              <div className="space-y-6">
+                {/* Best Model Summary */}
+                <Card className="bg-slate-700/50 border-slate-600">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-green-400 flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Best Model: {optimizationResults.bestModel.model.type.charAt(0).toUpperCase() +
+                        optimizationResults.bestModel.model.type.slice(1)}
+                      {optimizationResults.bestModel.isValid ? (
+                        <Badge className="ml-2 bg-green-600 text-xs">Valid</Badge>
+                      ) : (
+                        <Badge className="ml-2 bg-yellow-600 text-xs">
+                          {optimizationResults.bestModel.invalidMonthsCount} Invalid Month{optimizationResults.bestModel.invalidMonthsCount !== 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-green-900/20 rounded p-2 border border-green-700/30">
+                        <div className="text-xs text-slate-400">Mean Absolute Deviation ⭐</div>
+                        <div className="text-xl font-bold text-green-400">
+                          {optimizationResults.bestModel.meanDeviation.toFixed(2)} kWh
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">Optimization metric</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400">Max Deviation</div>
+                        <div className="text-xl font-bold text-white">
+                          {optimizationResults.bestModel.maxDeviation.toFixed(2)} kWh
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400">RMSE</div>
+                        <div className="text-xl font-bold text-white">
+                          {optimizationResults.bestModel.rmse.toFixed(2)} kWh
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400">R²</div>
+                        <div className="text-xl font-bold text-white">
+                          {optimizationResults.bestModel.model.rSquared.toFixed(4)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Model Equation */}
+                    <div className="mt-4 p-3 bg-slate-800 rounded">
+                      <div className="text-xs text-slate-400 mb-1">Model Equation</div>
+                      <div className="text-sm text-white font-mono">
+                        {optimizationResults.bestModel.model.type === 'linear' &&
+                          `AC Power = ${optimizationResults.bestModel.model.slope?.toFixed(4)} × T + ${optimizationResults.bestModel.model.intercept?.toFixed(4)}`}
+                        {optimizationResults.bestModel.model.type === 'quadratic' &&
+                          `AC Power = ${optimizationResults.bestModel.model.coefficients?.a?.toFixed(4)} × T² + ${optimizationResults.bestModel.model.coefficients?.b?.toFixed(4)} × T + ${optimizationResults.bestModel.model.coefficients?.c?.toFixed(4)}`}
+                        {optimizationResults.bestModel.model.type === 'logarithmic' &&
+                          `AC Power = ${optimizationResults.bestModel.model.coefficients?.a?.toFixed(4)} × ln(T) + ${optimizationResults.bestModel.model.coefficients?.b?.toFixed(4)}`}
+                        {optimizationResults.bestModel.model.type === 'exponential' &&
+                          `AC Power = ${optimizationResults.bestModel.model.coefficients?.a?.toFixed(4)} × e^(${optimizationResults.bestModel.model.coefficients?.b?.toFixed(4)} × T)`}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Model Comparison Table */}
+                <Card className="bg-slate-700/50 border-slate-600">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-white">Model Comparison</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-600">
+                            <th className="text-left p-2 text-slate-300">Model Type</th>
+                            <th className="text-center p-2 text-slate-300">Status</th>
+                            <th className="text-right p-2 text-slate-300">Mean Dev.</th>
+                            <th className="text-right p-2 text-slate-300">Max Dev.</th>
+                            <th className="text-right p-2 text-slate-300">RMSE</th>
+                            <th className="text-right p-2 text-slate-300">R²</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {optimizationResults.results.map((result: any, idx: number) => (
+                            <tr
+                              key={idx}
+                              className={`border-b border-slate-700 ${
+                                result.model.type === optimizationResults.bestModel.model.type
+                                  ? 'bg-green-900/20'
+                                  : !result.isValid
+                                  ? 'opacity-60'
+                                  : ''
+                              }`}
+                            >
+                              <td className="p-2 text-white font-medium">
+                                {result.model.type.charAt(0).toUpperCase() + result.model.type.slice(1)}
+                                {result.model.type === optimizationResults.bestModel.model.type && (
+                                  <Badge className="ml-2 bg-green-600 text-xs">Best</Badge>
+                                )}
+                              </td>
+                              <td className="text-center p-2">
+                                {result.isValid ? (
+                                  <Badge className="bg-green-600/80 text-xs">✓ Valid</Badge>
+                                ) : (
+                                  <Badge className="bg-red-600/80 text-xs">✗ {result.invalidMonthsCount}</Badge>
+                                )}
+                              </td>
+                              <td className="text-right p-2 text-blue-400">
+                                {result.meanDeviation.toFixed(2)}
+                              </td>
+                              <td className="text-right p-2 text-yellow-400">
+                                {result.maxDeviation.toFixed(2)}
+                              </td>
+                              <td className="text-right p-2 text-blue-400">
+                                {result.rmse.toFixed(2)}
+                              </td>
+                              <td className="text-right p-2 text-green-400">
+                                {result.model.rSquared.toFixed(4)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Scatter Plot: Y[i] vs Temperature */}
+                <Card className="bg-slate-700/50 border-slate-600">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-white">
+                      Regression Visualization: Y[i] vs Temperature
+                    </CardTitle>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Y[i] = Total kWh[i] - Target Non-AC kWh. Shows actual data points and fitted regression line.
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const selectedModel = optimizationResults.results.find(
+                        (r: any) => (r.model.customId || r.model.type) === selectedModelType
+                      ) || optimizationResults.bestModel
+
+                      // Prepare data for scatter plot
+                      const temperatures = selectedModel.monthlyResults.map((m: any) => m.temperature)
+                      const yValues = selectedModel.monthlyResults.map((m: any) =>
+                        m.totalKwh - parseFloat(targetNonACKwh)
+                      )
+
+                      // Generate regression line points
+                      const minTemp = Math.min(...temperatures)
+                      const maxTemp = Math.max(...temperatures)
+                      const tempRange = Array.from({length: 50}, (_, i) =>
+                        minTemp + (maxTemp - minTemp) * i / 49
+                      )
+
+                      // Calculate regression line values based on model type
+                      const regressionLine = tempRange.map(temp => {
+                        if (selectedModel.model.type === 'linear') {
+                          return selectedModel.model.slope * temp + selectedModel.model.intercept
+                        } else if (selectedModel.model.type === 'quadratic') {
+                          const { a = 0, b = 0, c = 0 } = selectedModel.model.coefficients || {}
+                          return a * temp * temp + b * temp + c
+                        } else if (selectedModel.model.type === 'logarithmic') {
+                          const { a = 0, b = 0 } = selectedModel.model.coefficients || {}
+                          return temp > 0 ? a * Math.log(temp) + b : 0
+                        } else if (selectedModel.model.type === 'exponential') {
+                          const { a = 1, b = 0 } = selectedModel.model.coefficients || {}
+                          return a * Math.exp(b * temp)
+                        }
+                        return 0
+                      })
+
+                      const chartData = {
+                        labels: temperatures.map((t: number, i: number) =>
+                          `${selectedModel.monthlyResults[i].date} (${t.toFixed(1)}°C)`
+                        ),
+                        datasets: [
+                          {
+                            type: 'scatter' as const,
+                            label: 'Y[i] = Total - Target (Actual Data)',
+                            data: temperatures.map((temp: number, i: number) => ({
+                              x: temp,
+                              y: yValues[i]
+                            })),
+                            backgroundColor: 'rgba(250, 204, 21, 0.8)',
+                            borderColor: 'rgba(250, 204, 21, 1)',
+                            pointRadius: 8,
+                            pointHoverRadius: 10
+                          },
+                          {
+                            type: 'line' as const,
+                            label: `${selectedModel.model.type.charAt(0).toUpperCase() + selectedModel.model.type.slice(1)} Regression Line`,
+                            data: tempRange.map((temp: number, i: number) => ({
+                              x: temp,
+                              y: regressionLine[i]
+                            })),
+                            backgroundColor: 'rgba(59, 130, 246, 0)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.1
+                          }
+                        ]
+                      }
+
+                      const chartOptions = {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            labels: {
+                              color: 'white',
+                              font: { size: 12 }
+                            }
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: function(context: any) {
+                                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} kWh at ${context.parsed.x.toFixed(1)}°C`
+                              }
+                            }
+                          }
+                        },
+                        scales: {
+                          x: {
+                            type: 'linear' as const,
+                            title: {
+                              display: true,
+                              text: 'Temperature (°C)',
+                              color: 'white',
+                              font: { size: 14, weight: 'bold' as const }
+                            },
+                            ticks: {
+                              color: 'white'
+                            },
+                            grid: {
+                              color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                          },
+                          y: {
+                            title: {
+                              display: true,
+                              text: 'Y[i] = Total kWh - Target Non-AC kWh',
+                              color: 'white',
+                              font: { size: 14, weight: 'bold' as const }
+                            },
+                            ticks: {
+                              color: 'white'
+                            },
+                            grid: {
+                              color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                          }
+                        }
+                      }
+
+                      return (
+                        <div className="h-96">
+                          <Chart type="line" data={chartData} options={chartOptions} />
+                        </div>
+                      )
+                    })()}
+                  </CardContent>
+                </Card>
+
+                {/* Monthly Results with Selected Model */}
+                <Card className="bg-slate-700/50 border-slate-600">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg text-white">
+                          Monthly Results Preview
+                        </CardTitle>
+                        <p className="text-sm text-slate-400 mt-1">
+                          Target: {parseFloat(targetNonACKwh).toFixed(2)} kWh
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-white text-sm">Select Model to Preview</Label>
+                        <Select value={selectedModelType} onValueChange={setSelectedModelType}>
+                          <SelectTrigger className="bg-slate-600 border-slate-500 w-48">
+                            <SelectValue placeholder="Select model" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-700 border-slate-600">
+                            {optimizationResults.results.map((result: any) => {
+                              const modelKey = result.model.customId || result.model.type
+                              const modelLabel = result.model.isCustom
+                                ? `${result.model.type.charAt(0).toUpperCase() + result.model.type.slice(1)} (Custom)`
+                                : result.model.type.charAt(0).toUpperCase() + result.model.type.slice(1)
+
+                              return (
+                                <SelectItem key={modelKey} value={modelKey}>
+                                  {modelLabel}
+                                  {result.model.type === optimizationResults.bestModel.model.type && !result.model.isCustom && ' ⭐ (Best)'}
+                                  {!result.isValid && ` ✗ (${result.invalidMonthsCount})`}
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-600">
+                            <th className="text-left p-2 text-slate-300">Date</th>
+                            <th className="text-center p-2 text-slate-300">Valid</th>
+                            <th className="text-right p-2 text-slate-300">Temp (°C)</th>
+                            <th className="text-right p-2 text-slate-300">Total kWh</th>
+                            <th className="text-right p-2 text-slate-300 bg-yellow-900/30">Y[i] = Total - Target</th>
+                            <th className="text-right p-2 text-slate-300">Expected AC kWh</th>
+                            <th className="text-right p-2 text-slate-300">Non-AC kWh</th>
+                            <th className="text-right p-2 text-slate-300">Deviation</th>
+                            <th className="text-right p-2 text-slate-300">% of Target</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            // Find the selected model's results
+                            const selectedModel = optimizationResults.results.find(
+                              (r: any) => (r.model.customId || r.model.type) === selectedModelType
+                            ) || optimizationResults.bestModel
+
+                            return selectedModel.monthlyResults.map((month: any, idx: number) => {
+                            const percentOfTarget = (month.nonACKwh / parseFloat(targetNonACKwh)) * 100
+                            const isClose = Math.abs(percentOfTarget - 100) < 10
+                            // Calculate Y[i] = Total kWh - Target Non-AC kWh
+                            const yValue = month.totalKwh - parseFloat(targetNonACKwh)
+
+                            return (
+                              <tr
+                                key={idx}
+                                className={`border-b border-slate-700 hover:bg-slate-800/30 ${
+                                  !month.isValid ? 'bg-red-900/10' : ''
+                                }`}
+                              >
+                                <td className="p-2 text-white">{month.date}</td>
+                                <td className="text-center p-2">
+                                  {month.isValid ? (
+                                    <span className="text-green-400 text-xs">✓</span>
+                                  ) : (
+                                    <span className="text-red-400 text-xs font-bold" title="Expected AC kWh is out of valid range (must be >0 and <Total kWh)">✗</span>
+                                  )}
+                                </td>
+                                <td className="text-right p-2 text-orange-400">
+                                  {month.temperature.toFixed(1)}
+                                </td>
+                                <td className="text-right p-2 text-slate-300">
+                                  {month.totalKwh.toLocaleString()}
+                                </td>
+                                <td className="text-right p-2 bg-yellow-900/30 font-bold text-yellow-300">
+                                  {yValue.toFixed(2)}
+                                </td>
+                                <td className={`text-right p-2 ${
+                                  !month.isValid ? 'text-red-400 font-bold' : 'text-purple-400'
+                                }`}>
+                                  {month.expectedACKwh.toFixed(2)}
+                                </td>
+                                <td className={`text-right p-2 font-medium ${
+                                  !month.isValid ? 'text-red-400' : isClose ? 'text-green-400' : 'text-blue-400'
+                                }`}>
+                                  {month.nonACKwh.toFixed(2)}
+                                </td>
+                                <td className="text-right p-2 text-yellow-400">
+                                  {month.deviation.toFixed(2)}
+                                </td>
+                                <td className={`text-right p-2 ${
+                                  !month.isValid ? 'text-red-400' : isClose ? 'text-green-400' : 'text-slate-300'
+                                }`}>
+                                  {percentOfTarget.toFixed(1)}%
+                                </td>
+                              </tr>
+                            )
+                            })
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Energy vs Temperature Regression Analysis */}
       <Card className="bg-slate-800/50 border-slate-700">
