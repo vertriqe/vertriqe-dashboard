@@ -36,23 +36,12 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
+    const now = new Date(); // UTC time
+    const fromDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1, 0, 0, 0)); // First day of previous month at 00:00
+    const toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59)); // Last day of previous month at 23:59:59
+    const tsFrom = Math.round(fromDate.getTime() / 1000);
+    const tsTo = Math.round(toDate.getTime() / 1000);
 
-    //from beginning of the previous month
-    const now = new Date();
-    const fromDate = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-
-    //to end of previous month
-    const toDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-
-    
-//  make use of
-//   the logic of /energy of 12 months:
-//   "
-//   http://localhost:3000/api/tsdb" and
-//   {"operation":"read","key":"vertriqe_25245_weave","Read":{"start_timestamp":1728297905,"end_timestamp":17
-//   59833905,"downsampling":2592000,"ag
-//   gregation":"avg"}} (1 year ago to
-//   now)
 
     const response = await fetch(getTsdbUrl(), {
       method: "POST",
@@ -63,8 +52,8 @@ export async function GET(_request: NextRequest) {
         operation: "read",
         key: "vertriqe_25245_weave",
         Read: {
-          start_timestamp: Math.round(fromDate.getTime() / 1000),
-          end_timestamp: Math.round(toDate.getTime() / 1000)
+          start_timestamp: tsFrom,
+          end_timestamp: tsTo
         }
       })
     })
@@ -88,23 +77,23 @@ export async function GET(_request: NextRequest) {
       // Calculate average power consumption for the month
       const totalPower = data.reduce((sum: number, point: any) => sum + point.value, 0)
       const avgPower = totalPower / data.length
-
-      // Calculate total hours in the previous month
-      const daysInMonth = new Date(toDate.getFullYear(), toDate.getMonth() + 1, 0).getDate()
-      const hoursInMonth = daysInMonth * 24
+      const dailyAverage = avgPower * 24;
+      const daysInMonth = Math.round((tsTo - tsFrom) / (60 * 60 * 24));
+      
 
       // Calculate total energy usage for the month
-      const totalUsage = avgPower * hoursInMonth
+      const totalUsage = dailyAverage * daysInMonth
 
       return NextResponse.json({
         success: true,
         usage: [{
-          timestamp: Math.round(fromDate.getTime() / 1000),
+          timestamp: tsFrom,
           value: totalUsage
         }],
         details: {
           avgPower,
-          hoursInMonth,
+          dailyAverage,
+          daysInMonth,
           dataPoints: data.length
         }
       })

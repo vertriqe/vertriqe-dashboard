@@ -1,7 +1,9 @@
-//const tsFrom = 1756479600; // 30/aug
-//const tsTo = 1759158000;   // 30/sep
-const tsFrom = 1759244400; // 1/oct
-const tsTo = 1761836400;   // 31/oct
+const now = new Date(); // UTC time
+const fromDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1, 0, 0, 0)); // First day of previous month at 00:00
+const toDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59)); // Last day of previous month at 23:59:59
+const tsFrom = Math.round(fromDate.getTime() / 1000);
+const tsTo = Math.round(toDate.getTime() / 1000);
+
 
 const apiUrl = "https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556"
 //e.g. {"operation":"read","key":"vertriqe_25245_weave","Read":{"start_timestamp":1756479600,"end_timestamp":1759158000}}
@@ -23,7 +25,6 @@ const response = await fetch(apiUrl, {
 });
 
 const energyUsage = await response.json();
-console.log("Fetched energy usage data: ", energyUsage);
 
 // Check if the response was successful
 if (!energyUsage.success || !energyUsage.data) {
@@ -47,8 +48,10 @@ dataArray.forEach(entry => {
 
 const averageValue = accumulatedValue / dataArray.length;
 
-//multiply by 24 hours to get daily average, and then by 30 to get monthly average
 const dailyAverage = averageValue * 24;
-const monthlyAverage = dailyAverage * 30;
-
+const daysInMonth = Math.round((tsTo - tsFrom) / (60 * 60 * 24));
+const monthlyAverage = dailyAverage * daysInMonth;
+console.log("Average Power Consumption (kW): ", averageValue);
+console.log("Daily Average Energy Usage (kWh): ", dailyAverage);
+console.log("Days in Month: ", daysInMonth);
 console.log("Estimated Monthly Energy Usage (kWh): ", monthlyAverage * 1000);
