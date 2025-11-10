@@ -128,7 +128,7 @@ export async function GET(_request: NextRequest) {
           const monthData = monthlyBreakdown.find((m: any) => m.month === monthKey)
           //console.log("monthData: ", Object.keys(monthData))
           if (monthData) {
-            point.value = point.value + monthData["nonACKwh"]
+            point.value = point.value
           }
         }
       }
