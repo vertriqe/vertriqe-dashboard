@@ -101,9 +101,6 @@ export function getKeyConfig(key: string, tsdbConfig: TSDBConfig | null): KeyCon
  * Applies TSDB configuration to a data point
  */
 export function applyTsdbConfig(value: number, config: KeyConfig): number {
-    console.log("Applying TSDB config:", config)
-    console.log("Value before config:", value)
-    console.log("Value after config:", value * config.multiplier + config.offset)
   return value * config.multiplier + config.offset
 }
 

@@ -36,19 +36,13 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    
-    //from beginning of the previousmonth
-    const fromDate = new Date();
-    fromDate.setMonth(fromDate.getMonth() - 1);
-    fromDate.setDate(1);
-    fromDate.setHours(0, 0, 0, 0); // Set to the start of the day
-    
+
+    //from beginning of the previous month
+    const now = new Date();
+    const fromDate = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
 
     //to end of previous month
-    const toDate = new Date();
-    fromDate.setMonth(fromDate.getMonth() - 1);
-    toDate.setDate(0); // Setting date to 0 sets it to the last day of the previous month
-    toDate.setHours(23, 59, 59, 999); // Set to the end of the day
+    const toDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
     
 //  make use of
@@ -60,17 +54,6 @@ export async function GET(_request: NextRequest) {
 //   gregation":"avg"}} (1 year ago to
 //   now)
 
-      console.log({
-        operation: "read",
-        key: "vertriqe_25245_weave",
-        Read: {
-          start_timestamp: Math.round(fromDate.getTime() / 1000),
-          end_timestamp: Math.round(new Date().getTime() / 1000),
-          downsampling: 2592000, // Monthly downsampling
-          aggregation: "avg"
-        }
-      })
-
     const response = await fetch(getTsdbUrl(), {
       method: "POST",
       headers: {
@@ -81,59 +64,50 @@ export async function GET(_request: NextRequest) {
         key: "vertriqe_25245_weave",
         Read: {
           start_timestamp: Math.round(fromDate.getTime() / 1000),
-          end_timestamp: Math.round(new Date().getTime() / 1000),
-          downsampling: 2592000, // Monthly downsampling
-          aggregation: "avg"
+          end_timestamp: Math.round(toDate.getTime() / 1000)
         }
       })
     })
-    
-    
+
     if (!response.ok) {
       throw new Error("Failed to fetch data from TSDB")
     }
     let data = await response.json()
-    
+
     if(data && data.data && data.data.data){
       data = data.data.data
     }
 
-    console.log("data: ", data)
     if (data && data.length > 0) {
-
       // Get TSDB multiplier config by fetchTsdbConfig()
       const tsdbConfig = await fetchTsdbConfig()
-      
 
-
+      // Apply TSDB config to all data points
       data = processTsdbData(data, "vertriqe_25245_weave", tsdbConfig);
-      for (let point of data) {
-        point.value = point.value * 24 * 30; // Approximate number of hours in a month
-      }
 
-      // Fetch non-AC usage from Redis (key: bill_analysis:weave:breakdown)
-      const breakdownKey = `bill_analysis:weave:breakdown`
-      const breakdownStr = await redis.get(breakdownKey)
+      // Calculate average power consumption for the month
+      const totalPower = data.reduce((sum: number, point: any) => sum + point.value, 0)
+      const avgPower = totalPower / data.length
 
-      if (breakdownStr) {
-        const monthlyBreakdown = JSON.parse(breakdownStr)
-        
-        // Add non-AC usage to each data point
-        for (let point of data) {
-          const pointDate = new Date(point.timestamp * 1000)
-          const monthKey = pointDate.getMonth() + 1
-          //console.log("monthKey: ", monthKey)
-          // Find matching month in breakdown
-          //console.log("monthlyBreakdown: ", monthlyBreakdown)
-          const monthData = monthlyBreakdown.find((m: any) => m.month === monthKey)
-          //console.log("monthData: ", Object.keys(monthData))
-          if (monthData) {
-            point.value = point.value
-          }
+      // Calculate total hours in the previous month
+      const daysInMonth = new Date(toDate.getFullYear(), toDate.getMonth() + 1, 0).getDate()
+      const hoursInMonth = daysInMonth * 24
+
+      // Calculate total energy usage for the month
+      const totalUsage = avgPower * hoursInMonth
+
+      return NextResponse.json({
+        success: true,
+        usage: [{
+          timestamp: Math.round(fromDate.getTime() / 1000),
+          value: totalUsage
+        }],
+        details: {
+          avgPower,
+          hoursInMonth,
+          dataPoints: data.length
         }
-      }
-
-      return NextResponse.json({ success: true, usage: data })
+      })
     } else {
       return NextResponse.json({ success: false, error: "No data available", data: data }, { status: 404 })
     }
