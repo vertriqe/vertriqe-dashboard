@@ -407,7 +407,7 @@ export default function Dashboard() {
                                 },
                                 {
                                   label: "Forecasted Usage After Saving",
-                                  data: forecastData.values.map(value => value * 0.85),
+                                  data: forecastData.values.map(value => value * 0.9),
                                   borderColor: "#22c55e",
                                   backgroundColor: "#22c55e",
                                 },
