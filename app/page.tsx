@@ -57,7 +57,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [isNewsLoading, setIsNewsLoading] = useState(true)
   const [showCalculationInfo, setShowCalculationInfo] = useState<string | null>(null)
-  const [forecastData, setForecastData] = useState<{ labels: string[], values: number[], previousActual: number | null } | null>(null)
+  const [forecastData, setForecastData] = useState<{ labels: string[], values: number[], previousActual: number | null, projectedValues?: number[] } | null>(null)
   const { user } = useUser()
   const currentDate = getCurrentFormattedDate()
   const isHuntUser = user?.name === "The Hunt"
@@ -138,7 +138,20 @@ export default function Dashboard() {
             console.error("Error fetching previous month usage:", error)
           }
 
-          setForecastData({ labels: forecastLabels, values: forecastValues, previousActual })
+          // Fetch projected usage based on baseline regression model
+          let projectedValues: number[] = []
+          try {
+            const projectionResponse = await fetch(`/api/forecast-projection?siteId=${siteId}`)
+            const projectionData = await projectionResponse.json()
+
+            if (projectionData.success && projectionData.projections) {
+              projectedValues = projectionData.projections.map((p: any) => p.value)
+            }
+          } catch (error) {
+            console.error("Error fetching projected usage:", error)
+          }
+
+          setForecastData({ labels: forecastLabels, values: forecastValues, previousActual, projectedValues })
         }
       } catch (error) {
         console.error("Error fetching forecast data:", error)
@@ -366,6 +379,12 @@ export default function Dashboard() {
                           <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
                           <span className="text-xs text-slate-300">Forecasted Usage After Saving</span>
                         </div>
+                        {forecastData?.projectedValues && forecastData.projectedValues.length > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 bg-orange-500 rounded-full"></div>
+                            <span className="text-xs text-slate-300">Projected Usage (Model)</span>
+                          </div>
+                        )}
                         {forecastData?.previousActual && (
                           <div className="flex items-center gap-1.5">
                             <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
@@ -392,6 +411,13 @@ export default function Dashboard() {
                                   borderColor: "#22c55e",
                                   backgroundColor: "#22c55e",
                                 },
+                                ...(forecastData.projectedValues && forecastData.projectedValues.length > 0 ? [{
+                                  label: "Projected Usage (Model)",
+                                  data: forecastData.projectedValues,
+                                  borderColor: "#f97316",
+                                  backgroundColor: "#f97316",
+                                  borderDash: [5, 5],
+                                }] : []),
                                 ...(forecastData.previousActual ? [{
                                   label: "Previous Month Actual",
                                   data: [forecastData.previousActual, ...Array(forecastData.values.length - 1).fill(null)],
