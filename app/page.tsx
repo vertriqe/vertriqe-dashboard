@@ -123,7 +123,8 @@ export default function Dashboard() {
             const matchingData = breakdown.find((row: any) => row.month === month)
 
             forecastLabels.push(futureDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))
-            forecastValues.push(matchingData ? matchingData.totalKwh : 0)
+            // Use AC-only usage (expectedACKwh) instead of total usage
+            forecastValues.push(matchingData ? matchingData.expectedACKwh : 0)
           }
 
           // Fetch actual usage from backend API for previous month
