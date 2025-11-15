@@ -319,6 +319,69 @@ export const ABOUT_COFFEE_SENSORS: SensorConfig[] = [
   { key: "vertriqe_25369_amb_hum2", name: "2-12 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
 ]
 
+// Telstar Office sensor configurations
+export const TELSTAR_SENSORS: SensorConfig[] = [
+  // Energy meters (instant power)
+  { key: "vertriqe_25253_cttp", name: "Energy Meter 1 - Instant Power (25253)", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25255_cttp", name: "Energy Meter 2 - Instant Power (25255)", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25256_cttp", name: "Energy Meter 3 - Instant Power (25256)", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25233_cttp", name: "Energy Meter 4 - Instant Power (25233)", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25257_cttp", name: "Energy Meter 5 - Instant Power (25257)", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25258_cttp", name: "Energy Meter 6 - Instant Power (25258)", type: "instant", owner: "Telstar Office" },
+  
+  // Ambient sensors
+  { key: "vertriqe_25266_amb_temp", name: "AC 2-1-3 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25266_amb_hum", name: "AC 2-1-3 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25267_amb_temp", name: "AC 2-1-4 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25267_amb_hum", name: "AC 2-1-4 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25268_amb_temp", name: "AC 2-1-5 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25268_amb_hum", name: "AC 2-1-5 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25269_amb_temp", name: "AC 2-1-6 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25269_amb_hum", name: "AC 2-1-6 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25270_amb_temp", name: "AC 2-1-7 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25270_amb_hum", name: "AC 2-1-7 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25271_amb_temp", name: "AC 2-1-8 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25271_amb_hum", name: "AC 2-1-8 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25278_amb_temp", name: "AC 2-2-1 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25278_amb_hum", name: "AC 2-2-1 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25279_amb_temp", name: "AC 2-2-2 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25279_amb_hum", name: "AC 2-2-2 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25280_amb_temp", name: "AC 2-2-3 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25280_amb_hum", name: "AC 2-2-3 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25281_amb_temp", name: "AC 2-2-4 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25281_amb_hum", name: "AC 2-2-4 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25283_amb_temp", name: "AC 2-2-5 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25283_amb_hum", name: "AC 2-2-5 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25282_amb_temp", name: "AC 2-2-6 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25282_amb_hum", name: "AC 2-2-6 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25284_amb_temp", name: "AC 2-2-7 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25284_amb_hum", name: "AC 2-2-7 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25285_amb_temp", name: "AC 2-2-8 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25285_amb_hum", name: "AC 2-2-8 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25286_amb_temp", name: "AC 2-2-9 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25286_amb_hum", name: "AC 2-2-9 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25287_amb_temp", name: "AC 2-2-10 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25287_amb_hum", name: "AC 2-2-10 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25499_amb_temp", name: "AC 3-1-1 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25499_amb_hum", name: "AC 3-1-1 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25500_amb_temp", name: "AC 3-1-2 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25500_amb_hum", name: "AC 3-1-2 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25501_amb_temp", name: "AC 3-1-3 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25501_amb_hum", name: "AC 3-1-3 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25502_amb_temp", name: "AC 3-1-4 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25502_amb_hum", name: "AC 3-1-4 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25503_amb_temp", name: "AC 3-1-5 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25503_amb_hum", name: "AC 3-1-5 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25504_amb_temp", name: "AC 3-1-6 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25504_amb_hum", name: "AC 3-1-6 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25505_amb_temp", name: "AC 3-2-1 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25505_amb_hum", name: "AC 3-2-1 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25506_amb_temp", name: "AC 3-2-2 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25506_amb_hum", name: "AC 3-2-2 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25507_amb_temp", name: "AC 3-2-3 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
+  { key: "vertriqe_25507_amb_hum", name: "AC 3-2-3 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
+]
+
 // Zone sensor configurations for management
 export const WEAVE_ZONES: ZoneSensor[] = [
   {
@@ -427,8 +490,36 @@ export const TNL_ZONES: ZoneSensor[] = [
   { id: 14, name: "Room 2102 (Alt)", tempSensor: "vertriqe_25411_amb_temp", humSensor: "vertriqe_25411_amb_hum", savingModeEnabled: false }
 ]
 
+export const TELSTAR_ZONES: ZoneSensor[] = [
+  { id: 1, name: "AC 2-1-3", tempSensor: "vertriqe_25266_amb_temp", humSensor: "vertriqe_25266_amb_hum", savingModeEnabled: false },
+  { id: 2, name: "AC 2-1-4", tempSensor: "vertriqe_25267_amb_temp", humSensor: "vertriqe_25267_amb_hum", savingModeEnabled: false },
+  { id: 3, name: "AC 2-1-5", tempSensor: "vertriqe_25268_amb_temp", humSensor: "vertriqe_25268_amb_hum", savingModeEnabled: false },
+  { id: 4, name: "AC 2-1-6", tempSensor: "vertriqe_25269_amb_temp", humSensor: "vertriqe_25269_amb_hum", savingModeEnabled: false },
+  { id: 5, name: "AC 2-1-7", tempSensor: "vertriqe_25270_amb_temp", humSensor: "vertriqe_25270_amb_hum", savingModeEnabled: false },
+  { id: 6, name: "AC 2-1-8", tempSensor: "vertriqe_25271_amb_temp", humSensor: "vertriqe_25271_amb_hum", savingModeEnabled: false },
+  { id: 7, name: "AC 2-2-1", tempSensor: "vertriqe_25278_amb_temp", humSensor: "vertriqe_25278_amb_hum", savingModeEnabled: false },
+  { id: 8, name: "AC 2-2-2", tempSensor: "vertriqe_25279_amb_temp", humSensor: "vertriqe_25279_amb_hum", savingModeEnabled: false },
+  { id: 9, name: "AC 2-2-3", tempSensor: "vertriqe_25280_amb_temp", humSensor: "vertriqe_25280_amb_hum", savingModeEnabled: false },
+  { id: 10, name: "AC 2-2-4", tempSensor: "vertriqe_25281_amb_temp", humSensor: "vertriqe_25281_amb_hum", savingModeEnabled: false },
+  { id: 11, name: "AC 2-2-5", tempSensor: "vertriqe_25283_amb_temp", humSensor: "vertriqe_25283_amb_hum", savingModeEnabled: false },
+  { id: 12, name: "AC 2-2-6", tempSensor: "vertriqe_25282_amb_temp", humSensor: "vertriqe_25282_amb_hum", savingModeEnabled: false },
+  { id: 13, name: "AC 2-2-7", tempSensor: "vertriqe_25284_amb_temp", humSensor: "vertriqe_25284_amb_hum", savingModeEnabled: false },
+  { id: 14, name: "AC 2-2-8", tempSensor: "vertriqe_25285_amb_temp", humSensor: "vertriqe_25285_amb_hum", savingModeEnabled: false },
+  { id: 15, name: "AC 2-2-9", tempSensor: "vertriqe_25286_amb_temp", humSensor: "vertriqe_25286_amb_hum", savingModeEnabled: false },
+  { id: 16, name: "AC 2-2-10", tempSensor: "vertriqe_25287_amb_temp", humSensor: "vertriqe_25287_amb_hum", savingModeEnabled: false },
+  { id: 17, name: "AC 3-1-1", tempSensor: "vertriqe_25499_amb_temp", humSensor: "vertriqe_25499_amb_hum", savingModeEnabled: false },
+  { id: 18, name: "AC 3-1-2", tempSensor: "vertriqe_25500_amb_temp", humSensor: "vertriqe_25500_amb_hum", savingModeEnabled: false },
+  { id: 19, name: "AC 3-1-3", tempSensor: "vertriqe_25501_amb_temp", humSensor: "vertriqe_25501_amb_hum", savingModeEnabled: false },
+  { id: 20, name: "AC 3-1-4", tempSensor: "vertriqe_25502_amb_temp", humSensor: "vertriqe_25502_amb_hum", savingModeEnabled: false },
+  { id: 21, name: "AC 3-1-5", tempSensor: "vertriqe_25503_amb_temp", humSensor: "vertriqe_25503_amb_hum", savingModeEnabled: false },
+  { id: 22, name: "AC 3-1-6", tempSensor: "vertriqe_25504_amb_temp", humSensor: "vertriqe_25504_amb_hum", savingModeEnabled: false },
+  { id: 23, name: "AC 3-2-1", tempSensor: "vertriqe_25505_amb_temp", humSensor: "vertriqe_25505_amb_hum", savingModeEnabled: false },
+  { id: 24, name: "AC 3-2-2", tempSensor: "vertriqe_25506_amb_temp", humSensor: "vertriqe_25506_amb_hum", savingModeEnabled: false },
+  { id: 25, name: "AC 3-2-3", tempSensor: "vertriqe_25507_amb_temp", humSensor: "vertriqe_25507_amb_hum", savingModeEnabled: false },
+]
+
 // Combined sensor configurations
-export const ALL_SENSORS = [...WEAVE_SENSORS, ...HUNT_SENSORS, ...HAI_SANG_SENSORS, ...TNL_SENSORS, ...ABOUT_COFFEE_SENSORS]
+export const ALL_SENSORS = [...WEAVE_SENSORS, ...HUNT_SENSORS, ...HAI_SANG_SENSORS, ...TNL_SENSORS, ...ABOUT_COFFEE_SENSORS, ...TELSTAR_SENSORS]
 
 // Utility functions
 export function getSensorsByOwner(owner: string): SensorConfig[] {
@@ -475,6 +566,8 @@ export function getZonesByOwner(owner: string): ZoneSensor[] {
     return ABOUT_COFFEE_ZONES
   } else if (owner === "TNL") {
     return TNL_ZONES
+  } else if (owner === "Telstar Office") {
+    return TELSTAR_ZONES
   }
   return []
 }

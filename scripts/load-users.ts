@@ -33,6 +33,11 @@ async function loadUsers() {
         name: "TNL",
         email: "tnl@vertriqe.com",
         password: "tnl-vertriqe-2025!",
+      },
+      {
+        name: "Telstar Office",
+        email: "telstar_office@vertriqe.com",
+        password: "telstar2025-vertriqe-F!",
       }
     ]
 
@@ -67,6 +72,14 @@ async function loadUsers() {
       lon: "114.1702"
     }))
     console.log("✓ Location set for TNL (Yau Ma Tei)")
+
+    // Set location data for Telstar Office
+    await redis.set("user_location:telstar_office@vertriqe.com", JSON.stringify({
+      name: "Seoul",
+      lat: "37.5665",
+      lon: "126.9780"
+    }))
+    console.log("✓ Location set for Telstar Office (Seoul)")
 
     // Verify
     const storedData = await redis.get("vertriqe_auth")

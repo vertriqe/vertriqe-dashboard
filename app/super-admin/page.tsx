@@ -162,7 +162,8 @@ export default function SuperAdminPage() {
     { value: "weave", label: "Weave Studio", energyKey: ["vertriqe_25245_weave"], tempKey: "weather_thehunt_temp_c" },
     { value: "haisang", label: "Hai Sang", energyKey: ["vertriqe_24833_cctp"], tempKey: "weather_thehunt_temp_c" },
     { value: "tnl", label: "TNL", energyKey: ["vertriqe_25415_cctp", "vertriqe_25416_cctp"], tempKey: "weather_thehunt_temp_c" },
-    { value: "coffee", label: "About Coffee Jeju", energyKey: ["vertriqe_25327_temperature"], tempKey: "weather_thehunt_temp_c" }
+    { value: "coffee", label: "About Coffee Jeju", energyKey: ["vertriqe_25327_temperature"], tempKey: "weather_thehunt_temp_c" },
+    { value: "telstar", label: "Telstar Office", energyKey: ["vertriqe_25253_cttp","vertriqe_25255_cttp","vertriqe_25256_cttp","vertriqe_25233_cttp","vertriqe_25257_cttp","vertriqe_25258_cttp"], tempKey: "weather_telstar_temp_c" }
   ]
 
   // Function to get the appropriate multiplier, unit, and offset for a key
