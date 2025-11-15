@@ -124,6 +124,11 @@ const getDefaultUsers = () => {
       name: "TNL",
       email: "tnl@vertriqe.com",
       password: "tnl-vertriqe-2025!",
+    },
+    {
+      name: "Telstar Office",
+      email: "telstar_office@vertriqe.com",
+      password: "telstar2025-vertriqe-F!",
     }
   ]
 }
@@ -181,6 +186,13 @@ const initializeStorage = async () => {
       lat: "22.3123",
       lon: "114.1702"
     }))
+
+    // Set user location data for Telstar Office
+    await redis.set("user_location:telstar_office@vertriqe.com", JSON.stringify({
+      name: "Seoul",
+      lat: "37.5665",
+      lon: "126.9780"
+    }))
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error("Error during storage initialization:", errorMessage)
@@ -225,6 +237,17 @@ const initializeStorage = async () => {
       }))
     } catch (locationError) {
       console.error("Failed to set TNL location data:", locationError)
+    }
+
+    // Still try to set location data for Telstar Office
+    try {
+      await redis.set("user_location:telstar_office@vertriqe.com", JSON.stringify({
+        name: "Seoul",
+        lat: "37.5665",
+        lon: "126.9780"
+      }))
+    } catch (locationError) {
+      console.error("Failed to set Telstar Office location data:", locationError)
     }
   }
 }

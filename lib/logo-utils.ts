@@ -20,6 +20,10 @@ export function getLogoForUser(userEmail?: string): {
       src: 'https://webbox.imgix.net/images/rspdtnubdzcdfmnt/bf65e1c6-a69e-4b58-aa25-464dc4c3dd57.png?auto=format,compress&fit=crop&h=70',
       alt: 'TNL Logo'
     },
+    'telstar_office@vertriqe.com': {
+      src: '/images/telstar.png',
+      alt: 'Telstar Office Logo'
+    },
     // Default fallback for all other users
     default: {
       src: '/images/vertriqe-logo.png',
