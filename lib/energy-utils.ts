@@ -10,6 +10,7 @@ export interface DailyEnergyResult {
 }
 
 
+
 export async function fetchDailyEnergy(
   keys: string[],
   timestamp: number
@@ -36,6 +37,7 @@ export async function fetchDailyEnergy(
     let totalEnergy = 0
     let totalPoints = 0
     let errorMsg = ""
+    let isSpecial = keys.every(k => k.endsWith('_cttp') || k.endsWith('_weave'))
     for (const key of keys) {
       const payload = {
         operation: "read",
@@ -60,10 +62,21 @@ export async function fetchDailyEnergy(
         }
         const dataArray = energyUsage.data.data
         if (Array.isArray(dataArray) && dataArray.length > 0) {
-          dataArray.forEach((entry: any) => {
-            totalEnergy += entry.value
-          })
-          totalPoints += dataArray.length
+          if (isSpecial) {
+            // For cttp or weave, use average * 24 * 1000
+            let sum = 0
+            dataArray.forEach((entry: any) => {
+              sum += entry.value
+            })
+            const avg = sum / dataArray.length
+            totalEnergy += avg * 24 * 1000
+            totalPoints += dataArray.length
+          } else {
+            dataArray.forEach((entry: any) => {
+              totalEnergy += entry.value
+            })
+            totalPoints += dataArray.length
+          }
         }
       } catch (err) {
         errorMsg += `Key ${key}: ${err instanceof Error ? err.message : err}\n`
