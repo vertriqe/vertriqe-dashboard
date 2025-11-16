@@ -10,8 +10,6 @@ GET https://adest.vertriqe.io/api/saved-energy
     - possible options:
         - weave
         - tnl
-        - telstar_office
-        - samdasoo
         - the_hunt
         
 - **timestamp** (required): Unix timestamp for the date you want to query
@@ -52,3 +50,12 @@ From any date, you can get the timestamp at https://www.unixtimestamp.com or use
 ```bash
 date -j -f "%Y-%m-%d" "2025-11-16" +%s
 ```
+
+
+## Notes
+
+1. you can also use these site ids that are not listed in the doc:
+    - telstar_office(korea , no need to share)
+    - samdasoo(korea , no need to share)
+2. projectedEnergy is actually the current reading
+3. saved energy is actually a random amount calculated based on projectedEnergy and savingsPercentage(Random 11-16%)
