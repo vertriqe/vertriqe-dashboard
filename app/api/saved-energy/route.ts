@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { fetchDailyEnergy } from "@/lib/energy-utils"
+import { PROJECT_METER_KEYS } from "@/lib/meter-keys"
 
 const VALID_TOKEN = "dualmint_sFD05QtMc1cEoiYt"
 
@@ -63,8 +64,21 @@ export async function GET(request: NextRequest) {
     // Calculate the savings percentage based on the date
     const savingsPercentage = calculateSavingsPercentage(inputTimestamp)
 
-    // Fetch daily energy data
-    const result = await fetchDailyEnergy(id, inputTimestamp)
+
+    // Get all meter keys for the project
+    const keys = PROJECT_METER_KEYS[id?.toLowerCase() || ""]
+    if (!keys || keys.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `No meter keys found for project id: ${id}`
+        },
+        { status: 400 }
+      )
+    }
+
+    // Fetch daily energy data for all keys
+    const result = await fetchDailyEnergy(keys, inputTimestamp)
 
     if (!result.success) {
       return NextResponse.json(

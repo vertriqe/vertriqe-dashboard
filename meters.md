@@ -10,6 +10,7 @@ ID	Energy Meters	suffix	Remark
 9	25124	cttp	The Hunt
 10	25120+25121+25122+25123+25124	cttp	The Hunt
 
+keys:
 1.
 vertriqe_25253_cttp
 vertriqe_25255_cttp

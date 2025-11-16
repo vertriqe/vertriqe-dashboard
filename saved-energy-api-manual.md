@@ -7,6 +7,13 @@ GET https://adest.vertriqe.io/api/saved-energy
 
 ## Parameters
 - **id** (required): Project code (e.g., `weave`, `tnl`)
+    - possible options:
+        - weave
+        - tnl
+        - telstar_office
+        - samdasoo
+        - the_hunt
+        
 - **timestamp** (required): Unix timestamp for the date you want to query
 - **token** (required): `dualmint_sFD05QtMc1cEoiYt`
 
