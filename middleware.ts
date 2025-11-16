@@ -5,7 +5,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Allow access to login page, super-login page, API auth routes, and energy dashboard without authentication
-  if (pathname === "/login" || pathname === "/super-login" || pathname.startsWith("/api/auth") || pathname === "/energy" || pathname.startsWith("/api/tsdb") || pathname.startsWith("/api/weave-sensors") || pathname.startsWith("/api/daily-energy") || pathname.startsWith("/api/saved-energy")) {
+  if (pathname === "/login" || pathname === "/super-login" || pathname.startsWith("/api/auth") || pathname === "/energy" || pathname.startsWith("/api/tsdb") || pathname.startsWith("/api/weave-sensors") || pathname.startsWith("/api/daily-energy") || pathname.startsWith("/api/saved-energy") || pathname.startsWith("/api/saving-percentage")) {
     return NextResponse.next()
   }
 
