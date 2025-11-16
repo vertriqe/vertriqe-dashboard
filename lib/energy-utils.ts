@@ -1,3 +1,5 @@
+
+import { fetchTsdbConfig, getKeyConfig } from "@/lib/tsdb-config"
 const TSDB_API_URL = "https://gtsdb-admin.vercel.app/api/tsdb?apiUrl=http%3A%2F%2F35.221.150.154%3A5556"
 
 
@@ -38,6 +40,8 @@ export async function fetchDailyEnergy(
     let totalPoints = 0
     let errorMsg = ""
     let isSpecial = keys.every(k => k.endsWith('_cttp') || k.endsWith('_weave'))
+    // Fetch TSDB config for multipliers
+    const tsdbConfig = await fetchTsdbConfig()
     for (const key of keys) {
       const payload = {
         operation: "read",
@@ -61,19 +65,20 @@ export async function fetchDailyEnergy(
           continue
         }
         const dataArray = energyUsage.data.data
+        const keyConfig = getKeyConfig(key, tsdbConfig)
         if (Array.isArray(dataArray) && dataArray.length > 0) {
           if (isSpecial) {
-            // For cttp or weave, use average * 24 * 1000
+            // For cttp or weave, use average * 24 * multiplier
             let sum = 0
             dataArray.forEach((entry: any) => {
               sum += entry.value
             })
             const avg = sum / dataArray.length
-            totalEnergy += avg * 24 * 1000
+            totalEnergy += avg * 24 * keyConfig.multiplier
             totalPoints += dataArray.length
           } else {
             dataArray.forEach((entry: any) => {
-              totalEnergy += entry.value
+              totalEnergy += entry.value * keyConfig.multiplier
             })
             totalPoints += dataArray.length
           }
