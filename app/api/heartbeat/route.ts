@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         serial: id,
-        site: mapping.site,
+        //site: mapping.site,
         //meterGroup: mapping.meterGroup,
         //percentage: mapping.percentage,
         power: Math.round(result * mapping.percentage) / 100,
