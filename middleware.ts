@@ -4,8 +4,17 @@ import { jwtVerify } from "jose"
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  //bypass if query param is with "token"
+  if (request.nextUrl.searchParams.get("token") === "dualmint_sFD05QtMc1cEoiYt") {
+    return NextResponse.next()
+  }
+
   // Allow access to login page, super-login page, API auth routes, and energy dashboard without authentication
-  if (pathname === "/login" || pathname === "/super-login" || pathname.startsWith("/api/auth") || pathname === "/energy" || pathname.startsWith("/api/tsdb") || pathname.startsWith("/api/weave-sensors") || pathname.startsWith("/api/daily-energy") || pathname.startsWith("/api/saved-energy") || pathname.startsWith("/api/saving-percentage")) {
+  if (pathname === "/login" || 
+    pathname === "/super-login" || pathname.startsWith("/api/auth") || pathname === "/energy" || pathname.startsWith("/api/tsdb") || pathname.startsWith("/api/weave-sensors") || pathname.startsWith("/api/daily-energy") || pathname.startsWith("/api/saved-energy") 
+    || pathname.startsWith("/api/saving-percentage")
+    || pathname.startsWith("/api/heartbeat")
+  ) {
     return NextResponse.next()
   }
 
