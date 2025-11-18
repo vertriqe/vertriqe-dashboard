@@ -104,3 +104,40 @@ export async function fetchDailyEnergy(
     }
   }
 }
+
+export async function fetchCurrentSummedPower(
+  keys: string[]
+): Promise<number> {
+  const tsdbConfig = await fetchTsdbConfig()
+  let totalPower = 0
+  for (const key of keys) {
+    const payload = {
+      operation: "read",
+      key: key,
+      Read: {
+        lastx: 1
+      }
+    }
+    try {
+      const response = await fetch(TSDB_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      })
+      const powerData = await response.json()
+      if (!powerData.success || !powerData.data) {
+        continue
+      }
+      const dataArray = powerData.data.data
+      const keyConfig = getKeyConfig(key, tsdbConfig)
+      if (Array.isArray(dataArray) && dataArray.length > 0) {
+        totalPower += dataArray[0].value * keyConfig.multiplier
+      }
+    } catch (err) {
+      console.error(`Error fetching current power for key ${key}:`, err)
+    }
+  }
+  return totalPower
+}
