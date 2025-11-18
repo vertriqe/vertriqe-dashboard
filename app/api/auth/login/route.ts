@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { redis } from "@/lib/redis"
+import { redis, getDefaultUsers } from "@/lib/redis"
 import { cookies } from "next/headers"
 import { SignJWT } from "jose"
 
@@ -19,52 +19,57 @@ export async function POST(request: NextRequest) {
 
     console.log("Attempting to authenticate user:", email)
 
-    // Get users from Redis
+    // Get users from Redis (may be empty/non-existent)
     const usersData = await redis.get("vertriqe_auth")
     console.log("Redis data retrieved:", usersData)
     console.log("Type of Redis data:", typeof usersData)
 
-    if (!usersData) {
-      console.log("No user data found in Redis")
-      return NextResponse.json(
-        {
-          message: "Authentication system not configured. Please contact administrator.",
-          debug: "Redis key 'vertriqe_auth' is empty or doesn't exist",
-        },
-        { status: 500 },
-      )
-    }
+    let users: User[] = []
+    if (usersData) {
+      try {
+        if (typeof usersData === "string") {
+          users = JSON.parse(usersData)
+        } else if (Array.isArray(usersData)) {
+          users = usersData
+        } else {
+          throw new Error("Invalid data format")
+        }
 
-    let users: User[]
-    try {
-      // Handle both string and already parsed object cases
-      if (typeof usersData === "string") {
-        users = JSON.parse(usersData)
-      } else if (Array.isArray(usersData)) {
-        users = usersData
-      } else {
-        throw new Error("Invalid data format")
+        console.log(
+          "Parsed users:",
+          users.map((u) => ({ name: u.name, email: u.email })),
+        )
+      } catch (error) {
+        console.error("JSON parse error:", error)
+        console.error("Raw data that failed to parse:", usersData)
+        // If parsing fails, treat as empty and attempt default fallback below
+        users = []
       }
-
-      console.log(
-        "Parsed users:",
-        users.map((u) => ({ name: u.name, email: u.email })),
-      )
-    } catch (error) {
-      console.error("JSON parse error:", error)
-      console.error("Raw data that failed to parse:", usersData)
-      return NextResponse.json(
-        {
-          message: "Invalid user data format in database",
-          debug: `Failed to parse data from Redis. Raw data: ${JSON.stringify(usersData)}`,
-        },
-        { status: 500 },
-      )
+    } else {
+      console.log("No user data found in Redis; will try default users fallback.")
     }
 
-    // Find user with matching credentials
-    const user = users.find((u: User) => u.email === email && u.password === password)
-    console.log("User found:", !!user)
+    // Find user with matching credentials in Redis first
+    let user = users.find((u: User) => u.email === email && u.password === password)
+    console.log("User found in Redis:", !!user)
+
+    // If not found, check default users; if exists, insert into Redis and proceed
+    if (!user) {
+      const defaultUsers = getDefaultUsers()
+      const defaultUser = defaultUsers.find((u: User) => u.email === email && u.password === password)
+      console.log("User found in default users:", !!defaultUser)
+
+      if (defaultUser) {
+        // Insert/merge into Redis user list
+        const updatedUsers = [...users]
+        // Avoid duplicate by email
+        if (!updatedUsers.some((u) => u.email === defaultUser.email)) {
+          updatedUsers.push(defaultUser)
+        }
+        await redis.set("vertriqe_auth", JSON.stringify(updatedUsers))
+        user = defaultUser
+      }
+    }
 
     if (!user) {
       return NextResponse.json({ message: "Invalid email or password" }, { status: 401 })

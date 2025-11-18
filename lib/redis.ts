@@ -88,7 +88,7 @@ export const redis = {
 }
 
 // Get default users from environment variable
-const getDefaultUsers = () => {
+export const getDefaultUsers = () => {
   try {
     const defaultUsersEnv = process.env.DEFAULT_USERS
     if (defaultUsersEnv) {
