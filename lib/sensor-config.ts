@@ -554,6 +554,13 @@ export function getTnlCumulativeSensors(): string[] {
     .map(sensor => sensor.key)
 }
 
+export function getTelstarDashboardSensors(): string[] {
+  // Return all cttp (instant power) sensors for dashboard aggregation
+  return TELSTAR_SENSORS
+    .filter(sensor => sensor.type === 'instant' && sensor.key.includes('_cttp'))
+    .map(sensor => sensor.key)
+}
+
 // Note: ACCUMULATED_SENSOR_MAPPING removed - synthetic energy sensors are now used instead
 // Synthetic sensors are created automatically in the energy page from instant power sensors
 
