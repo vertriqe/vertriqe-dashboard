@@ -18,12 +18,7 @@ interface EnergyConfig {
   costPerKwh: number
 }
 
-interface HuntSensorData {
-  timestamp: number
-  value: number
-}
-
-interface WeaveSensorData {
+interface SensorData {
   timestamp: number
   value: number
 }
@@ -151,16 +146,28 @@ async function generateBaselineForecast(
   }
 }
 
-async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
+interface SensorData {
+  timestamp: number
+  value: number
+}
+
+type SensorType = 'cumulative' | 'instant'
+
+async function fetchSensorData(
+  cacheKey: string,
+  sensorKeys: string[],
+  sensorType: SensorType,
+  tsdbUrl: string = getTsdbUrl()
+): Promise<SensorData[]> {
   try {
-    const cacheKey = "hunt_sensor_data"
     const tsdbConfig = await fetchTsdbConfig()
-    const huntCumulativeSensors = getHuntCumulativeSensors()
-    
     const now = Math.floor(Date.now() / 1000)
     const ninetyDaysAgo = now - (90 * 24 * 3600)
     
-    const sensorPromises = huntCumulativeSensors.map(async (sensorKey) => {
+    const aggregation = sensorType === 'cumulative' ? 'max' : 'avg'
+    const multiplyBy24 = sensorType === 'instant'
+    
+    const sensorPromises = sensorKeys.map(async (sensorKey) => {
       const payload = {
         operation: "read",
         key: sensorKey,
@@ -168,16 +175,21 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
           start_timestamp: ninetyDaysAgo,
           end_timestamp: now,
           downsampling: 86400,
-          aggregation: "max"
+          aggregation
         }
       }
 
-      const response = await fetch(API_CONFIG.TSDB.BASE_URL, {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json"
+      }
+      
+      if (tsdbUrl === API_CONFIG.TSDB.BASE_URL) {
+        headers["x-api-url"] = "http://35.221.150.154:5556"
+      }
+
+      const response = await fetch(tsdbUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-url": "http://35.221.150.154:5556"
-        },
+        headers,
         body: JSON.stringify(payload)
       })
 
@@ -203,7 +215,6 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
     })
 
     const sensorResults = await Promise.all(sensorPromises)
-    
     const timeValueMap = new Map<number, number>()
     
     sensorResults.forEach(({ key, data }) => {
@@ -213,287 +224,64 @@ async function fetchHuntSensorData(): Promise<HuntSensorData[]> {
         const dateOfTs = new Date(point.timestamp * 1000).toISOString().split("T")[0]
         const tsOfDate = new Date(dateOfTs).getTime() / 1000
 
-        const processedValue = point.value * keyConfig.multiplier + keyConfig.offset
-        const existingValue = timeValueMap.get(tsOfDate) || 0
-        const newValue = existingValue + processedValue
-        timeValueMap.set(tsOfDate, newValue)
-      })
-    })
-    
-    let aggregatedData = Array.from(timeValueMap.entries())
-      .map(([timestamp, value]) => ({ timestamp, value }))
-      .sort((a, b) => a.timestamp - b.timestamp)
-
-    await redis.set(cacheKey, JSON.stringify(aggregatedData), 1800)
-
-    return aggregatedData
-    
-  } catch (error) {
-    return []
-  }
-}
-
-async function fetchWeaveSensorData(): Promise<WeaveSensorData[]> {
-  try {
-    const cacheKey = "weave_sensor_data"
-    const tsdbConfig = await fetchTsdbConfig()
-    const weaveSensors = getWeaveDashboardSensors()
-    
-    const now = Math.floor(Date.now() / 1000)
-    const ninetyDaysAgo = now - (90 * 24 * 3600)
-    
-    const sensorPromises = weaveSensors.map(async (sensorKey) => {
-      let payload = {
-        operation: "read",
-        key: sensorKey,
-        Read: {
-          start_timestamp: ninetyDaysAgo,
-          end_timestamp: now,
-          downsampling: 86400,
-          aggregation: "avg"
+        let processedValue = point.value * keyConfig.multiplier + keyConfig.offset
+        if (multiplyBy24) {
+          processedValue *= 24
         }
-      }
-
-      const response = await fetch(getTsdbUrl(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (!response.ok) {
-        return []
-      }
-
-      const result = await response.json()
-      
-      let dataPoints = []
-      if (result.success) {
-        if (result.data.success && result.data.data) {
-          dataPoints = result.data.data
-        } else if (Array.isArray(result.data)) {
-          dataPoints = result.data
-        }
-      }
-      
-      if (dataPoints.length > 0) {
-        const isCTTP = true;
-
-        const _result = dataPoints.map((point: any) => {
-          const config = getKeyConfig(sensorKey, tsdbConfig)
-          return {
-            timestamp: point.timestamp,
-            value: (point.value * config.multiplier + config.offset) * 24,
-            key: sensorKey
-          }
-        })
         
-        return _result
-      }
-      
-      return []
-    })
-
-    const allSensorResults = await Promise.all(sensorPromises)
-    
-    const timeValueMap = new Map<number, number>()
-    
-    allSensorResults.flat().forEach((point: any) => {
-      const dateOfTs = new Date(point.timestamp * 1000).toISOString().split("T")[0]
-      const normalizedTimestamp = new Date(dateOfTs).getTime() / 1000
-      
-      const existingValue = timeValueMap.get(normalizedTimestamp) || 0
-      timeValueMap.set(normalizedTimestamp, existingValue + point.value)
-    })
-    
-    const aggregatedData: WeaveSensorData[] = Array.from(timeValueMap.entries())
-      .map(([timestamp, value]) => ({ timestamp, value }))
-      .sort((a, b) => a.timestamp - b.timestamp)
-
-    await redis.set(cacheKey, JSON.stringify(aggregatedData), 30 * 60)
-    
-    return aggregatedData
-  } catch (error) {
-    return []
-  }
-}
-
-interface TnlSensorData {
-  timestamp: number
-  value: number
-}
-
-async function fetchTnlSensorData(): Promise<TnlSensorData[]> {
-  try {
-    const cacheKey = "tnl_sensor_data"
-    const tsdbConfig = await fetchTsdbConfig()
-    const tnlCumulativeSensors = getTnlCumulativeSensors()
-
-    const now = Math.floor(Date.now() / 1000)
-    const ninetyDaysAgo = now - (90 * 24 * 3600)
-
-    const sensorPromises = tnlCumulativeSensors.map(async (sensorKey) => {
-      const payload = {
-        operation: "read",
-        key: sensorKey,
-        Read: {
-          start_timestamp: ninetyDaysAgo,
-          end_timestamp: now,
-          downsampling: 86400,
-          aggregation: "max"
-        }
-      }
-
-      const response = await fetch(API_CONFIG.TSDB.BASE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-url": "http://35.221.150.154:5556"
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (!response.ok) {
-        return { key: sensorKey, data: [] }
-      }
-
-      const result = await response.json()
-
-      let dataPoints = []
-      if (result.success) {
-        if (result.data.success && result.data.data) {
-          dataPoints = result.data.data
-        } else if (Array.isArray(result.data)) {
-          dataPoints = result.data
-        }
-      }
-
-      return {
-        key: sensorKey,
-        data: dataPoints
-      }
-    })
-
-    const sensorResults = await Promise.all(sensorPromises)
-
-    const timeValueMap = new Map<number, number>()
-
-    sensorResults.forEach(({ key, data }) => {
-      const keyConfig = getKeyConfig(key, tsdbConfig)
-
-      data.forEach((point: any) => {
-        const dateOfTs = new Date(point.timestamp * 1000).toISOString().split("T")[0]
-        const tsOfDate = new Date(dateOfTs).getTime() / 1000
-
-        const processedValue = point.value * keyConfig.multiplier + keyConfig.offset
         const existingValue = timeValueMap.get(tsOfDate) || 0
-        const newValue = existingValue + processedValue
-        timeValueMap.set(tsOfDate, newValue)
+        timeValueMap.set(tsOfDate, existingValue + processedValue)
       })
     })
-
-    let aggregatedData = Array.from(timeValueMap.entries())
+    
+    const aggregatedData = Array.from(timeValueMap.entries())
       .map(([timestamp, value]) => ({ timestamp, value }))
       .sort((a, b) => a.timestamp - b.timestamp)
 
     await redis.set(cacheKey, JSON.stringify(aggregatedData), 1800)
-
     return aggregatedData
-
+    
   } catch (error) {
     return []
   }
 }
 
-interface TelstarSensorData {
-  timestamp: number
-  value: number
+async function fetchHuntSensorData(): Promise<SensorData[]> {
+  return fetchSensorData(
+    "hunt_sensor_data",
+    getHuntCumulativeSensors(),
+    'cumulative',
+    API_CONFIG.TSDB.BASE_URL
+  )
 }
 
-async function fetchTelstarSensorData(): Promise<TelstarSensorData[]> {
-  try {
-    const cacheKey = "telstar_sensor_data"
-    const tsdbConfig = await fetchTsdbConfig()
-    const telstarSensors = getTelstarDashboardSensors()
+async function fetchWeaveSensorData(): Promise<SensorData[]> {
+  return fetchSensorData(
+    "weave_sensor_data",
+    getWeaveDashboardSensors(),
+    'instant'
+  )
+}
 
-    const now = Math.floor(Date.now() / 1000)
-    const ninetyDaysAgo = now - (90 * 24 * 3600)
+async function fetchTnlSensorData(): Promise<SensorData[]> {
+  return fetchSensorData(
+    "tnl_sensor_data",
+    getTnlCumulativeSensors(),
+    'cumulative',
+    API_CONFIG.TSDB.BASE_URL
+  )
+}
 
-    const sensorPromises = telstarSensors.map(async (sensorKey) => {
-      const payload = {
-        operation: "read",
-        key: sensorKey,
-        Read: {
-          start_timestamp: ninetyDaysAgo,
-          end_timestamp: now,
-          downsampling: 86400,
-          aggregation: "avg"
-        }
-      }
-
-      const response = await fetch(getTsdbUrl(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      })
-
-      if (!response.ok) {
-        return { key: sensorKey, data: [] }
-      }
-
-      const result = await response.json()
-
-      let dataPoints = []
-      if (result.success) {
-        if (result.data.success && result.data.data) {
-          dataPoints = result.data.data
-        } else if (Array.isArray(result.data)) {
-          dataPoints = result.data
-        }
-      }
-
-      return {
-        key: sensorKey,
-        data: dataPoints
-      }
-    })
-
-    const sensorResults = await Promise.all(sensorPromises)
-
-    const timeValueMap = new Map<number, number>()
-
-    sensorResults.forEach(({ key, data }) => {
-      const keyConfig = getKeyConfig(key, tsdbConfig)
-
-      data.forEach((point: any) => {
-        const dateOfTs = new Date(point.timestamp * 1000).toISOString().split("T")[0]
-        const tsOfDate = new Date(dateOfTs).getTime() / 1000
-
-        const processedValue = (point.value * keyConfig.multiplier + keyConfig.offset) * 24
-        const existingValue = timeValueMap.get(tsOfDate) || 0
-        const newValue = existingValue + processedValue
-        timeValueMap.set(tsOfDate, newValue)
-      })
-    })
-
-    let aggregatedData = Array.from(timeValueMap.entries())
-      .map(([timestamp, value]) => ({ timestamp, value }))
-      .sort((a, b) => a.timestamp - b.timestamp)
-
-    await redis.set(cacheKey, JSON.stringify(aggregatedData), 1800)
-
-    return aggregatedData
-
-  } catch (error) {
-    return []
-  }
+async function fetchTelstarSensorData(): Promise<SensorData[]> {
+  return fetchSensorData(
+    "telstar_sensor_data",
+    getTelstarDashboardSensors(),
+    'instant'
+  )
 }
 
 async function calculateEnergyMetrics(
-  sensorData: HuntSensorData[] | WeaveSensorData[] | TnlSensorData[],
+  sensorData: SensorData[],
   _config: EnergyConfig,
   baseline: any = null,
   tsdbConfig: any = null
