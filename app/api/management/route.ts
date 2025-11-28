@@ -149,12 +149,12 @@ export async function GET() {
           // Apply TSDB configuration
           const tempConfig = getKeyConfig(zone.tempSensor, tsdbConfig)
           const humConfig = getKeyConfig(zone.humSensor, tsdbConfig)
-          
-          const processedTemp = tempData !== null 
+
+          const processedTemp = tempData !== null
             ? (tempData.value * tempConfig.multiplier + tempConfig.offset)
             : null
-            
-          const processedHum = humData !== null 
+
+          const processedHum = humData !== null
             ? (humData.value * humConfig.multiplier + humConfig.offset)
             : null
 
@@ -211,67 +211,7 @@ export async function GET() {
   } catch (error) {
     console.error("Management API error:", error)
 
-    // Return dummy data on error
-    const managementData = {
-      date: new Date().toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-      weather: {
-        condition: "Cloudy",
-        range: "28/31°C",
-      },
-      estimatedSaving: "0%",
-      zones: [
-        {
-          id: 1,
-          name: "Area 1",
-          temperature: "24.7°C",
-          humidity: "68%",
-          image: "/placeholder.svg?height=200&width=400",
-          savingModeEnabled: true,
-          lastUpdate: Date.now() - 300000, // 5 minutes ago
-        },
-        {
-          id: 2,
-          name: "Area 2",
-          temperature: "24.1°C",
-          humidity: "62%",
-          image: "/placeholder.svg?height=200&width=400",
-          savingModeEnabled: false,
-          lastUpdate: Date.now() - 180000, // 3 minutes ago
-        },
-        {
-          id: 3,
-          name: "Area 3",
-          temperature: "24.2°C",
-          humidity: "58%",
-          image: "/placeholder.svg?height=200&width=400",
-          savingModeEnabled: true,
-          lastUpdate: Date.now() - 600000, // 10 minutes ago
-        },
-        {
-          id: 4,
-          name: "Area 4",
-          temperature: "25.2°C",
-          humidity: "72%",
-          image: "/placeholder.svg?height=200&width=400",
-          savingModeEnabled: false,
-          lastUpdate: Date.now() - 120000, // 2 minutes ago
-        },
-        {
-          id: 5,
-          name: "Area 5",
-          temperature: "23.8°C",
-          humidity: "65%",
-          image: "/placeholder.svg?height=200&width=400",
-          savingModeEnabled: true,
-          lastUpdate: Date.now() - 240000, // 4 minutes ago
-        },
-      ],
-    }
 
-    return NextResponse.json(managementData)
+    return NextResponse.json({})
   }
 }

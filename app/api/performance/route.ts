@@ -5,6 +5,7 @@ import { redis } from "@/lib/redis"
 import { fetchWeatherData, processWeatherData, type WeatherLocation } from "@/lib/weather-service"
 import { fetchTsdbConfig, getKeyConfig, type TSDBResponse } from "@/lib/tsdb-config"
 import { getTsdbUrl } from "@/lib/api-config"
+import { getSensorsByOwner, getZonesByOwner } from "@/lib/sensor-config"
 
 // Office hours for The Hunt: 10:30am to 10:30pm GMT+8
 const OFFICE_START_HOUR = 10
@@ -266,7 +267,7 @@ async function getUserFromToken(): Promise<{ email: string; name: string } | nul
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
     const { payload } = await jwtVerify(token, secret)
 
-    return { 
+    return {
       email: payload.email as string,
       name: payload.name as string
     }
@@ -276,7 +277,7 @@ async function getUserFromToken(): Promise<{ email: string; name: string } | nul
   }
 }
 
-async function fetchEnergyData(sensorKey: string, period: string): Promise<{values: number[], timestamps: number[]}> {
+async function fetchEnergyData(sensorKey: string, period: string): Promise<{ values: number[], timestamps: number[] }> {
   try {
     let payload: any
 
@@ -319,7 +320,7 @@ async function fetchEnergyData(sensorKey: string, period: string): Promise<{valu
 
     if (!response.ok) {
       console.error(`Failed to fetch data for sensor ${sensorKey}:`, response.status)
-      return {values: [], timestamps: []}
+      return { values: [], timestamps: [] }
     }
 
     const result: TSDBResponse = await response.json()
@@ -329,14 +330,14 @@ async function fetchEnergyData(sensorKey: string, period: string): Promise<{valu
       const values = result.data.data.map(point => point.value)
       const timestamps = result.data.data.map(point => point.timestamp)
       console.log(`Extracted ${values.length} values for ${sensorKey}:`, values)
-      return {values, timestamps}
+      return { values, timestamps }
     }
 
     console.log(`No data found for sensor ${sensorKey}`)
-    return {values: [], timestamps: []}
+    return { values: [], timestamps: [] }
   } catch (error) {
     console.error(`Error fetching energy data for ${sensorKey}:`, error)
-    return {values: [], timestamps: []}
+    return { values: [], timestamps: [] }
   }
 }
 
@@ -399,7 +400,7 @@ async function fetchWeeklyAggregatedData(sensorKeys: string[]): Promise<{
   if (maxDataSensor.values.length === 0) {
     console.log("No hourly data found, returning realistic dummy data")
     // Return realistic dummy data with proper proportions
-    const dummyTimestamps = Array.from({length: 7}, (_, i) => {
+    const dummyTimestamps = Array.from({ length: 7 }, (_, i) => {
       const date = new Date()
       date.setDate(date.getDate() - (6 - i))
       date.setHours(12, 0, 0, 0)
@@ -523,95 +524,6 @@ async function fetchCombinedEnergyData(sensorKeys: string[], period: string): Pr
     const maxLength = Math.max(...allSensorData.map(data => data.values.length))
     console.log(`Max data points: ${maxLength}`)
 
-    if (maxLength === 0) {
-      console.log("No data points found, returning realistic dummy data with OT usage")
-      // Return realistic dummy data if no real data is available
-      if (period === 'today') {
-        // Hourly pattern for a day - realistic office hours vs OT
-        const dummyTimestamps = Array.from({length: 24}, (_, hour) => {
-          const date = new Date()
-          date.setHours(hour, 0, 0, 0)
-          return Math.floor(date.getTime() / 1000)
-        })
-        const normalUsage: number[] = []
-        const otUsage: number[] = []
-
-        dummyTimestamps.forEach((timestamp, hour) => {
-          if (isOfficeHours(timestamp)) {
-            // Office hours: 10:30am - 10:30pm GMT+8
-            normalUsage.push(Math.random() * 20 + 40) // 40-60 kW during office hours
-            otUsage.push(0)
-          } else {
-            // Outside office hours
-            normalUsage.push(0)
-            if (hour >= 6 && hour <= 9) {
-              otUsage.push(Math.random() * 15 + 20) // 20-35 kW early morning
-            } else if (hour >= 23 || hour <= 5) {
-              otUsage.push(Math.random() * 10 + 10) // 10-20 kW late night/early morning
-            } else {
-              otUsage.push(Math.random() * 8 + 5) // 5-13 kW other times
-            }
-          }
-        })
-
-        // Calculate percentages
-        const normalPercentage = normalUsage.map((normal, i) => {
-          const total = normal + otUsage[i]
-          return total > 0 ? (normal / total) * 100 : 0
-        })
-        const otPercentage = otUsage.map((ot, i) => {
-          const total = normalUsage[i] + ot
-          return total > 0 ? (ot / total) * 100 : 0
-        })
-
-        return {
-          normalUsage,
-          otUsage,
-          normalPercentage,
-          otPercentage,
-          labels: dummyTimestamps.map(ts => formatToGMT8(ts, period)),
-          timestamps: dummyTimestamps
-        }
-      } else {
-        // Monthly pattern with realistic daily variations
-        const dummyTimestamps = Array.from({length: 30}, (_, i) => {
-          const date = new Date()
-          date.setDate(date.getDate() - (29 - i))
-          date.setHours(14, 0, 0, 0) // Set to 2pm for office hours
-          return Math.floor(date.getTime() / 1000)
-        })
-        const normalData = Array.from({length: 30}, (_, i) => {
-          // Weekdays have higher usage, weekends lower
-          const dayOfWeek = (new Date().getDay() - (29 - i)) % 7
-          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-          return isWeekend ? Math.random() * 20 + 25 : Math.random() * 30 + 45
-        })
-        const otData = Array.from({length: 30}, (_, i) => {
-          // OT usage varies by day type
-          const dayOfWeek = (new Date().getDay() - (29 - i)) % 7
-          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-          return isWeekend ? Math.random() * 8 + 5 : Math.random() * 15 + 10
-        })
-        // Calculate percentages
-        const normalPercentage = normalData.map((normal, i) => {
-          const total = normal + otData[i]
-          return total > 0 ? (normal / total) * 100 : 0
-        })
-        const otPercentage = otData.map((ot, i) => {
-          const total = normalData[i] + ot
-          return total > 0 ? (ot / total) * 100 : 0
-        })
-
-        return {
-          normalUsage: normalData,
-          otUsage: otData,
-          normalPercentage,
-          otPercentage,
-          labels: dummyTimestamps.map(ts => formatToGMT8(ts, period)),
-          timestamps: dummyTimestamps
-        }
-      }
-    }
 
     // Combine all sensor data by time period
     const combinedValues: number[] = Array(maxLength).fill(0)
@@ -648,7 +560,7 @@ async function fetchCombinedEnergyData(sensorKeys: string[], period: string): Pr
       console.log("All timestamps from same day, creating realistic time distribution for demo")
       // Create realistic time distribution for week/month periods
       if (period === 'week') {
-        adjustedTimestamps = Array.from({length: maxLength}, (_, i) => {
+        adjustedTimestamps = Array.from({ length: maxLength }, (_, i) => {
           const date = new Date()
           date.setDate(date.getDate() - (maxLength - 1 - i))
           // Mix of office hours and OT times
@@ -658,7 +570,7 @@ async function fetchCombinedEnergyData(sensorKeys: string[], period: string): Pr
           return Math.floor(date.getTime() / 1000)
         })
       } else if (period === 'month') {
-        adjustedTimestamps = Array.from({length: maxLength}, (_, i) => {
+        adjustedTimestamps = Array.from({ length: maxLength }, (_, i) => {
           const date = new Date()
           date.setDate(date.getDate() - (maxLength - 1 - i))
           // Mix of office hours and OT times for monthly view
@@ -721,151 +633,31 @@ async function fetchCombinedEnergyData(sensorKeys: string[], period: string): Pr
     }
   } catch (error) {
     console.error("Error fetching combined energy data:", error)
-    // Return realistic dummy data on error with proper OT usage
-    if (period === 'week') {
-      const dummyTimestamps = Array.from({length: 7}, (_, i) => {
-        const date = new Date()
-        date.setDate(date.getDate() - (6 - i))
-        date.setHours(14, 0, 0, 0) // Set to 2pm for office hours
-        return Math.floor(date.getTime() / 1000)
-      })
-      const normalData = [45, 52, 48, 51, 59, 43, 38] // Normal usage during office hours
-      const otData = [12, 15, 10, 14, 18, 8, 6] // OT usage outside office hours
-
-      // Calculate percentages
-      const normalPercentage = normalData.map((normal, i) => {
-        const total = normal + otData[i]
-        return total > 0 ? (normal / total) * 100 : 0
-      })
-      const otPercentage = otData.map((ot, i) => {
-        const total = normalData[i] + ot
-        return total > 0 ? (ot / total) * 100 : 0
-      })
-
-      return {
-        normalUsage: normalData,
-        otUsage: otData,
-        normalPercentage,
-        otPercentage,
-        labels: dummyTimestamps.map(ts => formatToGMT8(ts, period)),
-        timestamps: dummyTimestamps
-      }
-    } else if (period === 'today') {
-      const dummyTimestamps = Array.from({length: 24}, (_, hour) => {
-        const date = new Date()
-        date.setHours(hour, 0, 0, 0)
-        return Math.floor(date.getTime() / 1000)
-      })
-      const normalUsage: number[] = []
-      const otUsage: number[] = []
-
-      dummyTimestamps.forEach((timestamp, hour) => {
-        if (isOfficeHours(timestamp)) {
-          normalUsage.push(Math.random() * 20 + 40) // 40-60 kW during office hours
-          otUsage.push(0)
-        } else {
-          normalUsage.push(0)
-          if (hour >= 6 && hour <= 9) {
-            otUsage.push(Math.random() * 15 + 20) // 20-35 kW early morning
-          } else if (hour >= 23 || hour <= 5) {
-            otUsage.push(Math.random() * 10 + 10) // 10-20 kW late night/early morning
-          } else {
-            otUsage.push(Math.random() * 8 + 5) // 5-13 kW other times
-          }
-        }
-      })
-
-      // Calculate percentages
-      const normalPercentage = normalUsage.map((normal, i) => {
-        const total = normal + otUsage[i]
-        return total > 0 ? (normal / total) * 100 : 0
-      })
-      const otPercentage = otUsage.map((ot, i) => {
-        const total = normalUsage[i] + ot
-        return total > 0 ? (ot / total) * 100 : 0
-      })
-
-      return {
-        normalUsage,
-        otUsage,
-        normalPercentage,
-        otPercentage,
-        labels: dummyTimestamps.map(ts => formatToGMT8(ts, period)),
-        timestamps: dummyTimestamps
-      }
-    } else {
-      // Monthly pattern with realistic daily variations
-      const dummyTimestamps = Array.from({length: 30}, (_, i) => {
-        const date = new Date()
-        date.setDate(date.getDate() - (29 - i))
-        // Mix of office hours and OT times for monthly view
-        // Cycle through: 5am (OT), 12pm (office), 8am (OT), 3pm (office), 11pm (OT)
-        const hours = [5, 12, 8, 15, 23]
-        const hour = hours[i % hours.length]
-        date.setHours(hour, 0, 0, 0)
-        return Math.floor(date.getTime() / 1000)
-      })
-
-      const normalData: number[] = []
-      const otData: number[] = []
-
-      dummyTimestamps.forEach((timestamp, i) => {
-        // Weekdays have higher usage, weekends lower
-        const dayOfWeek = (new Date().getDay() - (29 - i)) % 7
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-
-        if (isOfficeHours(timestamp)) {
-          // Office hours usage
-          normalData.push(isWeekend ? Math.random() * 20 + 25 : Math.random() * 30 + 45)
-          otData.push(0)
-        } else {
-          // OT usage
-          normalData.push(0)
-          otData.push(isWeekend ? Math.random() * 8 + 5 : Math.random() * 15 + 10)
-        }
-      })
-      // Calculate percentages
-      const normalPercentage = normalData.map((normal, i) => {
-        const total = normal + otData[i]
-        return total > 0 ? (normal / total) * 100 : 0
-      })
-      const otPercentage = otData.map((ot, i) => {
-        const total = normalData[i] + ot
-        return total > 0 ? (ot / total) * 100 : 0
-      })
-
-      return {
-        normalUsage: normalData,
-        otUsage: otData,
-        normalPercentage,
-        otPercentage,
-        labels: dummyTimestamps.map(ts => formatToGMT8(ts, period)),
-        timestamps: dummyTimestamps
-      }
+    return {
+      normalUsage: [],
+      otUsage: [],
+      normalPercentage: [],
+      otPercentage: [],
+      labels: [],
+      timestamps: []
     }
   }
 }
 
-async function fetchIndoorSensorData(): Promise<{ temperature: number | null, humidity: number | null }> {
+async function fetchIndoorSensorData(owner: string): Promise<{ temperature: number | null, humidity: number | null }> {
   try {
-    // Fetch data from all 5 areas for The Hunt and calculate average
-    const allTempSensors = [
-      "vertriqe_25114_amb_temp", // Area 1 temperature
-      "vertriqe_25115_amb_temp", // Area 2 temperature
-      "vertriqe_25116_amb_temp", // Area 3 temperature
-      "vertriqe_25117_amb_temp", // Area 4 temperature
-      "vertriqe_25118_amb_temp"  // Area 5 temperature
-    ]
+    // Get zones for the user to determine which sensors to fetch
+    const zones = getZonesByOwner(owner)
 
-    const allHumSensors = [
-      "vertriqe_25114_amb_hum", // Area 1 humidity
-      "vertriqe_25115_amb_hum", // Area 2 humidity
-      "vertriqe_25116_amb_hum", // Area 3 humidity
-      "vertriqe_25117_amb_hum", // Area 4 humidity
-      "vertriqe_25118_amb_hum"  // Area 5 humidity
-    ]
+    if (zones.length === 0) {
+      console.log(`No zones found for owner: ${owner}`)
+      return { temperature: null, humidity: null }
+    }
 
-    console.log(`Fetching indoor data from all 5 areas for average calculation`)
+    const allTempSensors = zones.map(zone => zone.tempSensor)
+    const allHumSensors = zones.map(zone => zone.humSensor)
+
+    console.log(`Fetching indoor data from ${zones.length} areas for ${owner}`)
 
     // Fetch temperature data from all sensors
     const tempPromises = allTempSensors.map(async (sensor) => {
@@ -1013,79 +805,9 @@ export async function GET(request: Request) {
 
     // Check if user is Weave Studio - return empty data
     if (user.name === "Weave Studio") {
-      const { searchParams } = new URL(request.url)
-      const period = searchParams.get('period') || 'week'
 
-      let labels: string[]
-      const now = new Date()
-
-      switch (period) {
-        case 'today':
-          // Generate GMT+8 hour labels
-          labels = Array.from({length: 24}, (_, i) => {
-            const date = new Date()
-            date.setHours(i, 0, 0, 0)
-            const timestamp = Math.floor(date.getTime() / 1000)
-            return formatToGMT8(timestamp, period)
-          })
-          break
-        case 'month':
-          // Generate GMT+8 date labels for last 30 days
-          labels = Array.from({length: 30}, (_, i) => {
-            const date = new Date(now)
-            date.setDate(date.getDate() - (29 - i))
-            const timestamp = Math.floor(date.getTime() / 1000)
-            return formatToGMT8(timestamp, period)
-          })
-          break
-        case 'week':
-        default:
-          // Generate GMT+8 date labels for last 7 days
-          labels = Array.from({length: 7}, (_, i) => {
-            const date = new Date(now)
-            date.setDate(date.getDate() - (6 - i))
-            const timestamp = Math.floor(date.getTime() / 1000)
-            return formatToGMT8(timestamp, period)
-          })
-          break
-      }
-
-      const dataLength = labels.length
 
       return NextResponse.json({
-        date: new Date().toLocaleDateString("en-US", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-        weather: {
-          condition: "Cloudy",
-          range: "28/31°C",
-        },
-        metrics: {
-          energySaved: "0kWh",
-          co2Reduced: "0kg",
-          estimateSaving: "$0",
-          averageIndoorTemperature: "N/A",
-          averageIndoorHumidity: "N/A",
-          averageOutdoorTemperature: "N/A",
-          averageOutdoorHumidity: "N/A",
-        },
-        usageData: {
-          labels: labels,
-          normalUsage: Array(dataLength).fill(0),
-          otUsage: Array(dataLength).fill(0),
-          baseline: Array(dataLength).fill(0),
-        },
-        savingPercentage: {
-          current: "0%",
-          data: Array(dataLength).fill(0),
-        },
-        acUsage: {
-          acOn: 0,
-          acOff: 0,
-          otOn: 0,
-        },
       })
     }
 
@@ -1097,19 +819,15 @@ export async function GET(request: Request) {
     const tsdbConfig = await fetchTsdbConfig()
 
     // Define The Hunt's energy meter sensors (cumulative consumption)
-    const energyMeterSensors = [
-      "vertriqe_25120_cctp", // Energy Meter 25120 (Cumulative)
-      "vertriqe_25121_cctp", // Energy Meter 25121 (Cumulative)  
-      "vertriqe_25122_cctp", // Energy Meter 25122 (Cumulative)
-      "vertriqe_25123_cctp", // Energy Meter 25123 (Cumulative)
-      "vertriqe_25124_cctp", // Energy Meter 25124 (Cumulative)
-    ]
+    let energyMeterSensors = getSensorsByOwner(user.name)
+      .filter(sensor => sensor.name.endsWith("_cttp") || sensor.name.endsWith("_weave"))
+      .map(sensor => sensor.key)
 
     // Fetch real weather data for outdoor conditions
     let weatherInfo
     let outdoorTemp = "N/A"
     let outdoorHumidity = "N/A"
-    
+
     const currentWeatherData = await fetchWeatherData(userLocation.lat, userLocation.lon)
 
     if (currentWeatherData) {
@@ -1120,34 +838,44 @@ export async function GET(request: Request) {
       }
       outdoorTemp = `${Math.round(currentWeatherData.current.temp_c)}°C`
       outdoorHumidity = `${currentWeatherData.current.humidity}%`
-    } else {
-      weatherInfo = {
-        condition: "Cloudy",
-        range: "28/31°C",
-      }
-      outdoorTemp = "27°C" // Fallback
-      outdoorHumidity = "65%" // Fallback
     }
 
     // Fetch indoor sensor data
-    const indoorData = await fetchIndoorSensorData()
-    
+    const indoorData = await fetchIndoorSensorData(user.name)
+
     // Apply TSDB configuration to indoor sensor data
     let processedIndoorTemp = "N/A"
     let processedIndoorHumidity = "N/A"
-    
+
+    // Get zones to find reference sensors for config
+    const zones = getZonesByOwner(user.name)
+
     if (indoorData.temperature !== null) {
-      const tempConfig = getKeyConfig("vertriqe_25114_amb_temp", tsdbConfig)
-      const adjustedTemp = indoorData.temperature * tempConfig.multiplier + tempConfig.offset
-      processedIndoorTemp = `${adjustedTemp.toFixed(1)}°C`
+      // Default to first zone's sensor if available, otherwise use a safe default or skip config
+      const tempSensorKey = zones.length > 0 ? zones[0].tempSensor : ""
+
+      if (tempSensorKey) {
+        const tempConfig = getKeyConfig(tempSensorKey, tsdbConfig)
+        const adjustedTemp = indoorData.temperature * tempConfig.multiplier + tempConfig.offset
+        processedIndoorTemp = `${adjustedTemp.toFixed(1)}°C`
+      } else {
+        processedIndoorTemp = `${indoorData.temperature.toFixed(1)}°C`
+      }
     }
-    
+
     if (indoorData.humidity !== null) {
-      const humConfig = getKeyConfig("vertriqe_25114_amb_hum", tsdbConfig)
-      const adjustedHum = indoorData.humidity * humConfig.multiplier + humConfig.offset
-      processedIndoorHumidity = `${Math.round(adjustedHum)}%`
+      // Default to first zone's sensor if available
+      const humSensorKey = zones.length > 0 ? zones[0].humSensor : ""
+
+      if (humSensorKey) {
+        const humConfig = getKeyConfig(humSensorKey, tsdbConfig)
+        const adjustedHum = indoorData.humidity * humConfig.multiplier + humConfig.offset
+        processedIndoorHumidity = `${Math.round(adjustedHum)}%`
+      } else {
+        processedIndoorHumidity = `${Math.round(indoorData.humidity)}%`
+      }
     }
-    
+
     const indoorTemp = processedIndoorTemp
     const indoorHumidity = processedIndoorHumidity
 
@@ -1165,14 +893,8 @@ export async function GET(request: Request) {
       Math.max(0, value * keyConfig.multiplier + keyConfig.offset)
     )
 
-    console.log(`${period.charAt(0).toUpperCase() + period.slice(1)} normal usage:`, processedNormalUsage)
-    console.log(`${period.charAt(0).toUpperCase() + period.slice(1)} OT usage:`, processedOtUsage)
-    console.log(`${period.charAt(0).toUpperCase() + period.slice(1)} labels (GMT+8):`, energyData.labels)
-
     // Get baseline for The Hunt user and generate temperature-based baseline
-    console.log(`🔍 Looking for baseline for user: ${user.name}`)
     const baseline = await getBaselineForUser(user.name)
-    console.log(`📊 Baseline result:`, baseline ? `Found ${baseline.regression.type}` : 'Not found')
     let baselineValues: number[] = []
 
     if (baseline && tsdbConfig) {
@@ -1184,8 +906,6 @@ export async function GET(request: Request) {
       const totalUsage = processedNormalUsage.map((normal, i) => normal + processedOtUsage[i])
       baselineValues = totalUsage.map(usage => usage * 1.255) // 25.5% higher than actual usage
     }
-
-    console.log(`Generated baseline values for ${period}:`, baselineValues)
 
     const performanceData = {
       date: new Date().toLocaleDateString("en-US", {

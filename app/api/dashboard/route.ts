@@ -8,7 +8,7 @@ import {
   getDummyWeatherData,
   type WeatherLocation,
 } from "@/lib/weather-service"
-import { getWeaveDashboardSensors, getHuntCumulativeSensors, getTnlCumulativeSensors, getTelstarDashboardSensors } from "@/lib/sensor-config"
+import { getDashboardSensorsByOwner } from "@/lib/sensor-config"
 import { fetchTsdbConfig, getKeyConfig } from "@/lib/tsdb-config"
 import { getTsdbUrl, API_CONFIG } from "@/lib/api-config"
 
@@ -246,37 +246,37 @@ async function fetchSensorData(
   }
 }
 
-async function fetchHuntSensorData(): Promise<SensorData[]> {
-  return fetchSensorData(
-    "hunt_sensor_data",
-    getHuntCumulativeSensors(),
-    'cumulative',
-    API_CONFIG.TSDB.BASE_URL
-  )
+// Configuration for sensor data fetching by owner
+const OWNER_FETCH_CONFIG: Record<string, { cacheKey: string; sensorType: SensorType; }> = {
+  "The Hunt": {
+    cacheKey: "hunt_sensor_data",
+    sensorType: 'cumulative',
+  },
+  "Weave Studio": {
+    cacheKey: "weave_sensor_data",
+    sensorType: 'instant'
+  },
+  "TNL": {
+    cacheKey: "tnl_sensor_data",
+    sensorType: 'cumulative',
+  },
+  "Telstar Office": {
+    cacheKey: "telstar_sensor_data",
+    sensorType: 'instant'
+  }
 }
 
-async function fetchWeaveSensorData(): Promise<SensorData[]> {
-  return fetchSensorData(
-    "weave_sensor_data",
-    getWeaveDashboardSensors(),
-    'instant'
-  )
-}
+async function fetchSensorDataByOwner(owner: string): Promise<SensorData[]> {
+  const config = OWNER_FETCH_CONFIG[owner]
+  if (!config) {
+    console.warn(`No fetch configuration found for owner: ${owner}`)
+    return []
+  }
 
-async function fetchTnlSensorData(): Promise<SensorData[]> {
   return fetchSensorData(
-    "tnl_sensor_data",
-    getTnlCumulativeSensors(),
-    'cumulative',
-    API_CONFIG.TSDB.BASE_URL
-  )
-}
-
-async function fetchTelstarSensorData(): Promise<SensorData[]> {
-  return fetchSensorData(
-    "telstar_sensor_data",
-    getTelstarDashboardSensors(),
-    'instant'
+    config.cacheKey,
+    getDashboardSensorsByOwner(owner),
+    config.sensorType,
   )
 }
 
@@ -407,18 +407,12 @@ export async function GET() {
     let energyUsageData
     let energySavingsData
 
-    if (user.name === "The Hunt" || user.name === "Weave Studio" || user.name === "TNL" || user.name === "Telstar Office") {
+    if (OWNER_FETCH_CONFIG[user.name]) {
       const config = await getEnergyConfig()
       const tsdbConfig = await fetchTsdbConfig()
       const baseline = await getBaselineForUser(user.name)
 
-      const sensorData = user.name === "The Hunt"
-        ? await fetchHuntSensorData()
-        : user.name === "TNL"
-        ? await fetchTnlSensorData()
-        : user.name === "Telstar Office"
-        ? await fetchTelstarSensorData()
-        : await fetchWeaveSensorData()
+      const sensorData = await fetchSensorDataByOwner(user.name)
 
       const metrics = await calculateEnergyMetrics(sensorData, config, baseline, tsdbConfig)
 

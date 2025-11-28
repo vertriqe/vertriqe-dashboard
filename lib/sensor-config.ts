@@ -5,7 +5,6 @@ export interface SensorConfig {
   name: string
   type: 'instant' | 'accumulated' | 'cumulative'
   owner: string
-  description?: string
 }
 
 export interface ZoneSensor {
@@ -14,158 +13,31 @@ export interface ZoneSensor {
   tempSensor: string
   humSensor: string
   savingModeEnabled: boolean
+  owner: string
 }
 
-// Weave Studio sensor configurations
-export const WEAVE_SENSORS: SensorConfig[] = [
-  {
-    key: "vertriqe_25247_weave",
-    name: "AC 1 - Average Power",
-    type: "instant",
-    owner: "Weave Studio",
-    description: "Air conditioner 1 average power consumption"
-  },
-  {
-    key: "vertriqe_25248_weave",
-    name: "AC 2 - Average Power",
-    type: "instant",
-    owner: "Weave Studio",
-    description: "Air conditioner 2 instant power consumption"
-  },
-  {
-    key: "vertriqe_25245_weave",
-    name: "Combined - Average Power",
-    type: "instant",
-    owner: "Weave Studio",
-    description: "Combined instant power consumption"
-  }
-  // Note: Synthetic "Energy Consumption" sensors are automatically created
-  // from the instant power sensors in the energy page
-]
-
-// The Hunt sensor configurations
-export const HUNT_SENSORS: SensorConfig[] = [
-  {
-    key: "vertriqe_25120_cctp",
-    name: "Area 1 - Total Energy (25120)",
-    type: "cumulative",
-    owner: "The Hunt",
-    description: "Area 1 cumulative energy consumption"
-  },
-  {
-    key: "vertriqe_25120_cttp", 
-    name: "Area 1 - Instant Power (25120)",
-    type: "instant",
-    owner: "The Hunt",
-    description: "Area 1 instant power consumption"
-  },
-  {
-    key: "vertriqe_25121_cctp",
-    name: "Area 2 - Total Energy (25121)",
-    type: "cumulative", 
-    owner: "The Hunt",
-    description: "Area 2 cumulative energy consumption"
-  },
-  {
-    key: "vertriqe_25121_cttp",
-    name: "Area 2 - Instant Power (25121)",
-    type: "instant",
-    owner: "The Hunt", 
-    description: "Area 2 instant power consumption"
-  },
-  {
-    key: "vertriqe_25122_cctp",
-    name: "Area 3 - Total Energy (25122)",
-    type: "cumulative",
-    owner: "The Hunt",
-    description: "Area 3 cumulative energy consumption"
-  },
-  {
-    key: "vertriqe_25122_cttp",
-    name: "Area 3 - Instant Power (25122)",
-    type: "instant", 
-    owner: "The Hunt",
-    description: "Area 3 instant power consumption"
-  },
-  {
-    key: "vertriqe_25123_cctp",
-    name: "Area 4 - Total Energy (25123)",
-    type: "cumulative",
-    owner: "The Hunt",
-    description: "Area 4 cumulative energy consumption"
-  },
-  {
-    key: "vertriqe_25123_cttp",
-    name: "Area 4 - Instant Power (25123)", 
-    type: "instant",
-    owner: "The Hunt",
-    description: "Area 4 instant power consumption"
-  },
-  {
-    key: "vertriqe_25124_cctp",
-    name: "Area 5 - Total Energy (25124)",
-    type: "cumulative",
-    owner: "The Hunt",
-    description: "Area 5 cumulative energy consumption"
-  },
-  {
-    key: "vertriqe_25124_cttp",
-    name: "Area 5 - Instant Power (25124)",
-    type: "instant",
-    owner: "The Hunt",
-    description: "Area 5 instant power consumption"
-  }
-]
-
-// Hai Sang sensor configurations
-export const HAI_SANG_SENSORS: SensorConfig[] = [
-  {
-    key: "vertriqe_24833_cttp",
-    name: "Hai Sang Cold Room Power",
-    type: "instant",
-    owner: "Hai Sang",
-    description: "Cold room power consumption"
-  },
-  {
-    key: "vertriqe_24836_temp2",
-    name: "Hai Sang Cold Room Temperature",
-    type: "instant",
-    owner: "Hai Sang",
-    description: "Cold room temperature sensor"
-  }
-]
-
-// TNL sensor configurations
-export const TNL_SENSORS: SensorConfig[] = [
-  {
-    key: "vertriqe_25415_cctp",
-    name: "Sensor 1 - Total Energy (25415)",
-    type: "cumulative",
-    owner: "TNL",
-    description: "Sensor 1 cumulative energy consumption"
-  },
-  {
-    key: "vertriqe_25415_cttp",
-    name: "Sensor 1 - Instant Power (25415)",
-    type: "instant",
-    owner: "TNL",
-    description: "Sensor 1 instantaneous power consumption"
-  },
-  {
-    key: "vertriqe_25416_cctp",
-    name: "Sensor 2 - Total Energy (25416)",
-    type: "cumulative",
-    owner: "TNL",
-    description: "Sensor 2 cumulative energy consumption"
-  },
-  {
-    key: "vertriqe_25416_cttp",
-    name: "Sensor 2 - Instant Power (25416)",
-    type: "instant",
-    owner: "TNL",
-    description: "Sensor 2 instantaneous power consumption"
-  },
-  // Room ambient sensors
+// Unified sensor configurations
+export const ALL_SENSORS: SensorConfig[] = [
+  // Weave Studio
+  { key: "vertriqe_25247_weave", name: "AC 1 - Average Power", type: "instant", owner: "Weave Studio" },
+  { key: "vertriqe_25248_weave", name: "AC 2 - Average Power", type: "instant", owner: "Weave Studio" },
+  { key: "vertriqe_25245_weave", name: "Combined - Average Power", type: "instant", owner: "Weave Studio" },
+  { key: "vertriqe_25120_cctp", name: "Area 1 - Total Energy (25120)", type: "cumulative", owner: "The Hunt" },
+  { key: "vertriqe_25120_cttp", name: "Area 1 - Instant Power (25120)", type: "instant", owner: "The Hunt" },
+  { key: "vertriqe_25121_cctp", name: "Area 2 - Total Energy (25121)", type: "cumulative", owner: "The Hunt" },
+  { key: "vertriqe_25121_cttp", name: "Area 2 - Instant Power (25121)", type: "instant", owner: "The Hunt" },
+  { key: "vertriqe_25122_cctp", name: "Area 3 - Total Energy (25122)", type: "cumulative", owner: "The Hunt" },
+  { key: "vertriqe_25122_cttp", name: "Area 3 - Instant Power (25122)", type: "instant", owner: "The Hunt" },
+  { key: "vertriqe_25123_cctp", name: "Area 4 - Total Energy (25123)", type: "cumulative", owner: "The Hunt" },
+  { key: "vertriqe_25123_cttp", name: "Area 4 - Instant Power (25123)", type: "instant", owner: "The Hunt" },
+  { key: "vertriqe_25124_cctp", name: "Area 5 - Total Energy (25124)", type: "cumulative", owner: "The Hunt" },
+  { key: "vertriqe_25124_cttp", name: "Area 5 - Instant Power (25124)", type: "instant", owner: "The Hunt" },
+  { key: "vertriqe_24833_cttp", name: "Hai Sang Cold Room Power", type: "instant", owner: "Hai Sang" },
+  { key: "vertriqe_24836_temp2", name: "Hai Sang Cold Room Temperature", type: "instant", owner: "Hai Sang" },
+  { key: "vertriqe_25415_cctp", name: "Sensor 1 - Total Energy (25415)", type: "cumulative", owner: "TNL" },
+  { key: "vertriqe_25415_cttp", name: "Sensor 1 - Instant Power (25415)", type: "instant", owner: "TNL" },
+  { key: "vertriqe_25416_cctp", name: "Sensor 2 - Total Energy (25416)", type: "cumulative", owner: "TNL" },
+  { key: "vertriqe_25416_cttp", name: "Sensor 2 - Instant Power (25416)", type: "instant", owner: "TNL" },
   { key: "vertriqe_25420_amb_temp", name: "Room 1503 - Ambient Temperature", type: "instant", owner: "TNL" },
   { key: "vertriqe_25420_amb_hum", name: "Room 1503 - Ambient Humidity", type: "instant", owner: "TNL" },
   { key: "vertriqe_25423_amb_temp", name: "Room 1505 - Ambient Temperature", type: "instant", owner: "TNL" },
@@ -193,13 +65,9 @@ export const TNL_SENSORS: SensorConfig[] = [
   { key: "vertriqe_25408_amb_temp", name: "Room 2102 - Ambient Temperature", type: "instant", owner: "TNL" },
   { key: "vertriqe_25408_amb_hum", name: "Room 2102 - Ambient Humidity", type: "instant", owner: "TNL" },
   { key: "vertriqe_25411_amb_temp", name: "Room 2102 - Ambient Temperature (Alt)", type: "instant", owner: "TNL" },
-  { key: "vertriqe_25411_amb_hum", name: "Room 2102 - Ambient Humidity (Alt)", type: "instant", owner: "TNL" }
-]
+  { key: "vertriqe_25411_amb_hum", name: "Room 2102 - Ambient Humidity (Alt)", type: "instant", owner: "TNL" },
 
-// About Coffee Jeju sensor configurations
-// Source: About Coffee Jeju.csv
-// Area | Energy Meter | AC Controller | Present Sensor | Ambient Sensor | Supply Air Sensor
-export const ABOUT_COFFEE_SENSORS: SensorConfig[] = [
+  // About Coffee Jeju
   // 1-1: AC:25327, Present:25334, Ambient:25335, Supply:25349
   { key: "vertriqe_25327_temperature", name: "1-1 AC Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25334_presence", name: "1-1 Presence", type: "instant", owner: "About Coffee Jeju" },
@@ -317,10 +185,8 @@ export const ABOUT_COFFEE_SENSORS: SensorConfig[] = [
   { key: "vertriqe_25376_presence", name: "2-12 Presence", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25369_amb_temp2", name: "2-12 Ambient Temperature", type: "instant", owner: "About Coffee Jeju" },
   { key: "vertriqe_25369_amb_hum2", name: "2-12 Ambient Humidity", type: "instant", owner: "About Coffee Jeju" },
-]
 
-// Telstar Office sensor configurations
-export const TELSTAR_SENSORS: SensorConfig[] = [
+  // Telstar Office
   // Energy meters (instant power)
   { key: "vertriqe_25253_cttp", name: "Energy Meter 1 - Instant Power (25253)", type: "instant", owner: "Telstar Office" },
   { key: "vertriqe_25255_cttp", name: "Energy Meter 2 - Instant Power (25255)", type: "instant", owner: "Telstar Office" },
@@ -328,7 +194,7 @@ export const TELSTAR_SENSORS: SensorConfig[] = [
   { key: "vertriqe_25233_cttp", name: "Energy Meter 4 - Instant Power (25233)", type: "instant", owner: "Telstar Office" },
   { key: "vertriqe_25257_cttp", name: "Energy Meter 5 - Instant Power (25257)", type: "instant", owner: "Telstar Office" },
   { key: "vertriqe_25258_cttp", name: "Energy Meter 6 - Instant Power (25258)", type: "instant", owner: "Telstar Office" },
-  
+
   // Ambient sensors
   { key: "vertriqe_25266_amb_temp", name: "AC 2-1-3 - Ambient Temperature", type: "instant", owner: "Telstar Office" },
   { key: "vertriqe_25266_amb_hum", name: "AC 2-1-3 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
@@ -382,75 +248,11 @@ export const TELSTAR_SENSORS: SensorConfig[] = [
   { key: "vertriqe_25507_amb_hum", name: "AC 3-2-3 - Ambient Humidity", type: "instant", owner: "Telstar Office" },
 ]
 
-// Zone sensor configurations for management
-export const WEAVE_ZONES: ZoneSensor[] = [
-  {
-    id: 1,
-    name: "AC 1",
-    tempSensor: "vertriqe_25245_amb_temp",
-    humSensor: "vertriqe_25245_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 2,
-    name: "AC 2",
-    tempSensor: "vertriqe_25247_amb_temp",
-    humSensor: "vertriqe_25247_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 3,
-    name: "Combined",
-    tempSensor: "vertriqe_25248_amb_temp",
-    humSensor: "vertriqe_25248_amb_hum",
-    savingModeEnabled: false,
-  }
-]
-
-export const HUNT_ZONES: ZoneSensor[] = [
-  {
-    id: 1,
-    name: "Area 1",
-    tempSensor: "vertriqe_25114_amb_temp",
-    humSensor: "vertriqe_25114_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 2,
-    name: "Area 2",
-    tempSensor: "vertriqe_25115_amb_temp",
-    humSensor: "vertriqe_25115_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 3,
-    name: "Area 3",
-    tempSensor: "vertriqe_25116_amb_temp",
-    humSensor: "vertriqe_25116_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 4,
-    name: "Area 4",
-    tempSensor: "vertriqe_25117_amb_temp",
-    humSensor: "vertriqe_25117_amb_hum",
-    savingModeEnabled: false,
-  },
-  {
-    id: 5,
-    name: "Area 5",
-    tempSensor: "vertriqe_25118_amb_temp",
-    humSensor: "vertriqe_25118_amb_hum",
-    savingModeEnabled: false,
-  }
-]
-
-// Generate ABOUT_COFFEE_ZONES from ABOUT_COFFEE_SENSORS
-// This automatically creates zone configurations from ambient sensors
+// Generate ABOUT_COFFEE_ZONES from ALL_SENSORS
 function generateAboutCoffeeZones(): ZoneSensor[] {
   const zones: ZoneSensor[] = []
-  // Filter for ambient temperature sensors (with '2' suffix)
-  const ambientSensors = ABOUT_COFFEE_SENSORS.filter(s => s.key.includes('_amb_temp2'))
+  // Filter for ambient temperature sensors (with '2' suffix) owned by About Coffee Jeju
+  const ambientSensors = ALL_SENSORS.filter(s => s.owner === "About Coffee Jeju" && s.key.includes('_amb_temp2'))
 
   ambientSensors.forEach((tempSensor, index) => {
     // Extract area name from sensor name (e.g., "1-1 Ambient Temperature" -> "1-1")
@@ -464,62 +266,74 @@ function generateAboutCoffeeZones(): ZoneSensor[] {
       name: areaName,
       tempSensor: tempSensor.key,
       humSensor: humSensorKey,
-      savingModeEnabled: false
+      savingModeEnabled: false,
+      owner: "About Coffee Jeju"
     })
   })
 
   return zones
 }
 
-export const ABOUT_COFFEE_ZONES: ZoneSensor[] = generateAboutCoffeeZones()
+// Unified zone configurations
+export const ALL_ZONES: ZoneSensor[] = [
+  // Weave Studio
+  { id: 1, name: "AC 1", tempSensor: "vertriqe_25245_amb_temp", humSensor: "vertriqe_25245_amb_hum", savingModeEnabled: false, owner: "Weave Studio" },
+  { id: 2, name: "AC 2", tempSensor: "vertriqe_25247_amb_temp", humSensor: "vertriqe_25247_amb_hum", savingModeEnabled: false, owner: "Weave Studio" },
+  { id: 3, name: "Combined", tempSensor: "vertriqe_25248_amb_temp", humSensor: "vertriqe_25248_amb_hum", savingModeEnabled: false, owner: "Weave Studio" },
 
-export const TNL_ZONES: ZoneSensor[] = [
-  { id: 1, name: "Room 1503", tempSensor: "vertriqe_25420_amb_temp", humSensor: "vertriqe_25420_amb_hum", savingModeEnabled: false },
-  { id: 2, name: "Room 1505", tempSensor: "vertriqe_25423_amb_temp", humSensor: "vertriqe_25423_amb_hum", savingModeEnabled: false },
-  { id: 3, name: "Room 1603", tempSensor: "vertriqe_25429_amb_temp", humSensor: "vertriqe_25429_amb_hum", savingModeEnabled: false },
-  { id: 4, name: "Room 1605", tempSensor: "vertriqe_25432_amb_temp", humSensor: "vertriqe_25432_amb_hum", savingModeEnabled: false },
-  { id: 5, name: "Room 1703", tempSensor: "vertriqe_25435_amb_temp", humSensor: "vertriqe_25435_amb_hum", savingModeEnabled: false },
-  { id: 6, name: "Room 1705", tempSensor: "vertriqe_25438_amb_temp", humSensor: "vertriqe_25438_amb_hum", savingModeEnabled: false },
-  { id: 7, name: "Room 1803", tempSensor: "vertriqe_25381_amb_temp", humSensor: "vertriqe_25381_amb_hum", savingModeEnabled: false },
-  { id: 8, name: "Room 1805", tempSensor: "vertriqe_25378_amb_temp", humSensor: "vertriqe_25378_amb_hum", savingModeEnabled: false },
-  { id: 9, name: "Room 1903", tempSensor: "vertriqe_25414_amb_temp", humSensor: "vertriqe_25414_amb_hum", savingModeEnabled: false },
-  { id: 10, name: "Room 1905", tempSensor: "vertriqe_25426_amb_temp", humSensor: "vertriqe_25426_amb_hum", savingModeEnabled: false },
-  { id: 11, name: "Room 2003", tempSensor: "vertriqe_25441_amb_temp", humSensor: "vertriqe_25441_amb_hum", savingModeEnabled: false },
-  { id: 12, name: "Room 2005", tempSensor: "vertriqe_25444_amb_temp", humSensor: "vertriqe_25444_amb_hum", savingModeEnabled: false },
-  { id: 13, name: "Room 2102", tempSensor: "vertriqe_25408_amb_temp", humSensor: "vertriqe_25408_amb_hum", savingModeEnabled: false },
-  { id: 14, name: "Room 2102 (Alt)", tempSensor: "vertriqe_25411_amb_temp", humSensor: "vertriqe_25411_amb_hum", savingModeEnabled: false }
+  // The Hunt
+  { id: 1, name: "Area 1", tempSensor: "vertriqe_25114_amb_temp", humSensor: "vertriqe_25114_amb_hum", savingModeEnabled: false, owner: "The Hunt" },
+  { id: 2, name: "Area 2", tempSensor: "vertriqe_25115_amb_temp", humSensor: "vertriqe_25115_amb_hum", savingModeEnabled: false, owner: "The Hunt" },
+  { id: 3, name: "Area 3", tempSensor: "vertriqe_25116_amb_temp", humSensor: "vertriqe_25116_amb_hum", savingModeEnabled: false, owner: "The Hunt" },
+  { id: 4, name: "Area 4", tempSensor: "vertriqe_25117_amb_temp", humSensor: "vertriqe_25117_amb_hum", savingModeEnabled: false, owner: "The Hunt" },
+  { id: 5, name: "Area 5", tempSensor: "vertriqe_25118_amb_temp", humSensor: "vertriqe_25118_amb_hum", savingModeEnabled: false, owner: "The Hunt" },
+
+  // About Coffee Jeju (Generated)
+  ...generateAboutCoffeeZones(),
+
+  // TNL
+  { id: 1, name: "Room 1503", tempSensor: "vertriqe_25420_amb_temp", humSensor: "vertriqe_25420_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 2, name: "Room 1505", tempSensor: "vertriqe_25423_amb_temp", humSensor: "vertriqe_25423_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 3, name: "Room 1603", tempSensor: "vertriqe_25429_amb_temp", humSensor: "vertriqe_25429_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 4, name: "Room 1605", tempSensor: "vertriqe_25432_amb_temp", humSensor: "vertriqe_25432_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 5, name: "Room 1703", tempSensor: "vertriqe_25435_amb_temp", humSensor: "vertriqe_25435_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 6, name: "Room 1705", tempSensor: "vertriqe_25438_amb_temp", humSensor: "vertriqe_25438_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 7, name: "Room 1803", tempSensor: "vertriqe_25381_amb_temp", humSensor: "vertriqe_25381_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 8, name: "Room 1805", tempSensor: "vertriqe_25378_amb_temp", humSensor: "vertriqe_25378_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 9, name: "Room 1903", tempSensor: "vertriqe_25414_amb_temp", humSensor: "vertriqe_25414_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 10, name: "Room 1905", tempSensor: "vertriqe_25426_amb_temp", humSensor: "vertriqe_25426_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 11, name: "Room 2003", tempSensor: "vertriqe_25441_amb_temp", humSensor: "vertriqe_25441_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 12, name: "Room 2005", tempSensor: "vertriqe_25444_amb_temp", humSensor: "vertriqe_25444_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 13, name: "Room 2102", tempSensor: "vertriqe_25408_amb_temp", humSensor: "vertriqe_25408_amb_hum", savingModeEnabled: false, owner: "TNL" },
+  { id: 14, name: "Room 2102 (Alt)", tempSensor: "vertriqe_25411_amb_temp", humSensor: "vertriqe_25411_amb_hum", savingModeEnabled: false, owner: "TNL" },
+
+  // Telstar Office
+  { id: 1, name: "AC 2-1-3", tempSensor: "vertriqe_25266_amb_temp", humSensor: "vertriqe_25266_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 2, name: "AC 2-1-4", tempSensor: "vertriqe_25267_amb_temp", humSensor: "vertriqe_25267_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 3, name: "AC 2-1-5", tempSensor: "vertriqe_25268_amb_temp", humSensor: "vertriqe_25268_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 4, name: "AC 2-1-6", tempSensor: "vertriqe_25269_amb_temp", humSensor: "vertriqe_25269_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 5, name: "AC 2-1-7", tempSensor: "vertriqe_25270_amb_temp", humSensor: "vertriqe_25270_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 6, name: "AC 2-1-8", tempSensor: "vertriqe_25271_amb_temp", humSensor: "vertriqe_25271_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 7, name: "AC 2-2-1", tempSensor: "vertriqe_25278_amb_temp", humSensor: "vertriqe_25278_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 8, name: "AC 2-2-2", tempSensor: "vertriqe_25279_amb_temp", humSensor: "vertriqe_25279_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 9, name: "AC 2-2-3", tempSensor: "vertriqe_25280_amb_temp", humSensor: "vertriqe_25280_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 10, name: "AC 2-2-4", tempSensor: "vertriqe_25281_amb_temp", humSensor: "vertriqe_25281_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 11, name: "AC 2-2-5", tempSensor: "vertriqe_25283_amb_temp", humSensor: "vertriqe_25283_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 12, name: "AC 2-2-6", tempSensor: "vertriqe_25282_amb_temp", humSensor: "vertriqe_25282_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 13, name: "AC 2-2-7", tempSensor: "vertriqe_25284_amb_temp", humSensor: "vertriqe_25284_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 14, name: "AC 2-2-8", tempSensor: "vertriqe_25285_amb_temp", humSensor: "vertriqe_25285_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 15, name: "AC 2-2-9", tempSensor: "vertriqe_25286_amb_temp", humSensor: "vertriqe_25286_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 16, name: "AC 2-2-10", tempSensor: "vertriqe_25287_amb_temp", humSensor: "vertriqe_25287_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 17, name: "AC 3-1-1", tempSensor: "vertriqe_25499_amb_temp", humSensor: "vertriqe_25499_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 18, name: "AC 3-1-2", tempSensor: "vertriqe_25500_amb_temp", humSensor: "vertriqe_25500_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 19, name: "AC 3-1-3", tempSensor: "vertriqe_25501_amb_temp", humSensor: "vertriqe_25501_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 20, name: "AC 3-1-4", tempSensor: "vertriqe_25502_amb_temp", humSensor: "vertriqe_25502_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 21, name: "AC 3-1-5", tempSensor: "vertriqe_25503_amb_temp", humSensor: "vertriqe_25503_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 22, name: "AC 3-1-6", tempSensor: "vertriqe_25504_amb_temp", humSensor: "vertriqe_25504_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 23, name: "AC 3-2-1", tempSensor: "vertriqe_25505_amb_temp", humSensor: "vertriqe_25505_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 24, name: "AC 3-2-2", tempSensor: "vertriqe_25506_amb_temp", humSensor: "vertriqe_25506_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
+  { id: 25, name: "AC 3-2-3", tempSensor: "vertriqe_25507_amb_temp", humSensor: "vertriqe_25507_amb_hum", savingModeEnabled: false, owner: "Telstar Office" },
 ]
-
-export const TELSTAR_ZONES: ZoneSensor[] = [
-  { id: 1, name: "AC 2-1-3", tempSensor: "vertriqe_25266_amb_temp", humSensor: "vertriqe_25266_amb_hum", savingModeEnabled: false },
-  { id: 2, name: "AC 2-1-4", tempSensor: "vertriqe_25267_amb_temp", humSensor: "vertriqe_25267_amb_hum", savingModeEnabled: false },
-  { id: 3, name: "AC 2-1-5", tempSensor: "vertriqe_25268_amb_temp", humSensor: "vertriqe_25268_amb_hum", savingModeEnabled: false },
-  { id: 4, name: "AC 2-1-6", tempSensor: "vertriqe_25269_amb_temp", humSensor: "vertriqe_25269_amb_hum", savingModeEnabled: false },
-  { id: 5, name: "AC 2-1-7", tempSensor: "vertriqe_25270_amb_temp", humSensor: "vertriqe_25270_amb_hum", savingModeEnabled: false },
-  { id: 6, name: "AC 2-1-8", tempSensor: "vertriqe_25271_amb_temp", humSensor: "vertriqe_25271_amb_hum", savingModeEnabled: false },
-  { id: 7, name: "AC 2-2-1", tempSensor: "vertriqe_25278_amb_temp", humSensor: "vertriqe_25278_amb_hum", savingModeEnabled: false },
-  { id: 8, name: "AC 2-2-2", tempSensor: "vertriqe_25279_amb_temp", humSensor: "vertriqe_25279_amb_hum", savingModeEnabled: false },
-  { id: 9, name: "AC 2-2-3", tempSensor: "vertriqe_25280_amb_temp", humSensor: "vertriqe_25280_amb_hum", savingModeEnabled: false },
-  { id: 10, name: "AC 2-2-4", tempSensor: "vertriqe_25281_amb_temp", humSensor: "vertriqe_25281_amb_hum", savingModeEnabled: false },
-  { id: 11, name: "AC 2-2-5", tempSensor: "vertriqe_25283_amb_temp", humSensor: "vertriqe_25283_amb_hum", savingModeEnabled: false },
-  { id: 12, name: "AC 2-2-6", tempSensor: "vertriqe_25282_amb_temp", humSensor: "vertriqe_25282_amb_hum", savingModeEnabled: false },
-  { id: 13, name: "AC 2-2-7", tempSensor: "vertriqe_25284_amb_temp", humSensor: "vertriqe_25284_amb_hum", savingModeEnabled: false },
-  { id: 14, name: "AC 2-2-8", tempSensor: "vertriqe_25285_amb_temp", humSensor: "vertriqe_25285_amb_hum", savingModeEnabled: false },
-  { id: 15, name: "AC 2-2-9", tempSensor: "vertriqe_25286_amb_temp", humSensor: "vertriqe_25286_amb_hum", savingModeEnabled: false },
-  { id: 16, name: "AC 2-2-10", tempSensor: "vertriqe_25287_amb_temp", humSensor: "vertriqe_25287_amb_hum", savingModeEnabled: false },
-  { id: 17, name: "AC 3-1-1", tempSensor: "vertriqe_25499_amb_temp", humSensor: "vertriqe_25499_amb_hum", savingModeEnabled: false },
-  { id: 18, name: "AC 3-1-2", tempSensor: "vertriqe_25500_amb_temp", humSensor: "vertriqe_25500_amb_hum", savingModeEnabled: false },
-  { id: 19, name: "AC 3-1-3", tempSensor: "vertriqe_25501_amb_temp", humSensor: "vertriqe_25501_amb_hum", savingModeEnabled: false },
-  { id: 20, name: "AC 3-1-4", tempSensor: "vertriqe_25502_amb_temp", humSensor: "vertriqe_25502_amb_hum", savingModeEnabled: false },
-  { id: 21, name: "AC 3-1-5", tempSensor: "vertriqe_25503_amb_temp", humSensor: "vertriqe_25503_amb_hum", savingModeEnabled: false },
-  { id: 22, name: "AC 3-1-6", tempSensor: "vertriqe_25504_amb_temp", humSensor: "vertriqe_25504_amb_hum", savingModeEnabled: false },
-  { id: 23, name: "AC 3-2-1", tempSensor: "vertriqe_25505_amb_temp", humSensor: "vertriqe_25505_amb_hum", savingModeEnabled: false },
-  { id: 24, name: "AC 3-2-2", tempSensor: "vertriqe_25506_amb_temp", humSensor: "vertriqe_25506_amb_hum", savingModeEnabled: false },
-  { id: 25, name: "AC 3-2-3", tempSensor: "vertriqe_25507_amb_temp", humSensor: "vertriqe_25507_amb_hum", savingModeEnabled: false },
-]
-
-// Combined sensor configurations
-export const ALL_SENSORS = [...WEAVE_SENSORS, ...HUNT_SENSORS, ...HAI_SANG_SENSORS, ...TNL_SENSORS, ...ABOUT_COFFEE_SENSORS, ...TELSTAR_SENSORS]
 
 // Utility functions
 export function getSensorsByOwner(owner: string): SensorConfig[] {
@@ -535,46 +349,82 @@ export function getSensorByKey(key: string): SensorConfig | undefined {
 }
 
 
-export function getWeaveDashboardSensors(): string[] {
-  // Return only the instant energy sensors for dashboard aggregation
-  return WEAVE_SENSORS
-    .filter(sensor => sensor.type === 'instant' && !sensor.key.includes('accumulated') && sensor.name.toLowerCase().includes('combined'))
+interface DashboardSensorFilter {
+  owner: string
+  type?: 'instant' | 'accumulated' | 'cumulative'
+  keyIncludes?: string
+  keyExcludes?: string
+  nameIncludes?: string
+}
+
+/**
+ * Generic function to get dashboard sensors based on filter criteria
+ * @param filter - Filter criteria for selecting sensors
+ * @returns Array of sensor keys matching the filter
+ */
+export function getDashboardSensors(filter: DashboardSensorFilter): string[] {
+  return ALL_SENSORS
+    .filter(sensor => {
+      // Owner is required
+      if (sensor.owner !== filter.owner) return false
+      
+      // Type filter (optional)
+      if (filter.type && sensor.type !== filter.type) return false
+      
+      // Key includes filter (optional)
+      if (filter.keyIncludes && !sensor.key.includes(filter.keyIncludes)) return false
+      
+      // Key excludes filter (optional)
+      if (filter.keyExcludes && sensor.key.includes(filter.keyExcludes)) return false
+      
+      // Name includes filter (optional, case-insensitive)
+      if (filter.nameIncludes && !sensor.name.toLowerCase().includes(filter.nameIncludes.toLowerCase())) return false
+      
+      return true
+    })
     .map(sensor => sensor.key)
 }
 
-export function getHuntCumulativeSensors(): string[] {
-  return HUNT_SENSORS
-    .filter(sensor => sensor.type === 'cumulative')
-    .map(sensor => sensor.key)
+/**
+ * Dashboard sensor configuration for each owner
+ * Maps owner names to their specific sensor filter criteria
+ */
+export const DASHBOARD_SENSOR_CONFIG: Record<string, DashboardSensorFilter> = {
+  "Weave Studio": {
+    owner: "Weave Studio",
+    type: 'instant',
+    keyExcludes: 'accumulated',
+    nameIncludes: 'combined'
+  },
+  "The Hunt": {
+    owner: "The Hunt",
+    type: 'cumulative'
+  },
+  "TNL": {
+    owner: "TNL",
+    type: 'cumulative'
+  },
+  "Telstar Office": {
+    owner: "Telstar Office",
+    type: 'instant',
+    keyIncludes: '_cttp'
+  }
 }
 
-export function getTnlCumulativeSensors(): string[] {
-  return TNL_SENSORS
-    .filter(sensor => sensor.type === 'cumulative')
-    .map(sensor => sensor.key)
+/**
+ * Get dashboard sensors for a specific owner
+ * @param owner - The owner name
+ * @returns Array of sensor keys for the owner's dashboard
+ */
+export function getDashboardSensorsByOwner(owner: string): string[] {
+  const config = DASHBOARD_SENSOR_CONFIG[owner]
+  if (!config) {
+    console.warn(`No dashboard sensor configuration found for owner: ${owner}`)
+    return []
+  }
+  return getDashboardSensors(config)
 }
-
-export function getTelstarDashboardSensors(): string[] {
-  // Return all cttp (instant power) sensors for dashboard aggregation
-  return TELSTAR_SENSORS
-    .filter(sensor => sensor.type === 'instant' && sensor.key.includes('_cttp'))
-    .map(sensor => sensor.key)
-}
-
-// Note: ACCUMULATED_SENSOR_MAPPING removed - synthetic energy sensors are now used instead
-// Synthetic sensors are created automatically in the energy page from instant power sensors
 
 export function getZonesByOwner(owner: string): ZoneSensor[] {
-  if (owner === "Weave Studio") {
-    return WEAVE_ZONES
-  } else if (owner === "The Hunt") {
-    return HUNT_ZONES
-  } else if (owner === "About Coffee Jeju") {
-    return ABOUT_COFFEE_ZONES
-  } else if (owner === "TNL") {
-    return TNL_ZONES
-  } else if (owner === "Telstar Office") {
-    return TELSTAR_ZONES
-  }
-  return []
+  return ALL_ZONES.filter(zone => zone.owner === owner)
 }

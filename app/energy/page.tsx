@@ -80,18 +80,6 @@ export default function EnergyDashboard() {
     "12months": { label: "12 Months", seconds: 31536000, downsampling: 2592000 }
   }
 
-  const aggregationTypes = ["max", "min", "avg", "sum"]
-  
-  // Check if current user is Weave Studio
-  const isWeaveUser = user?.name === "Weave Studio"
-
-// Project	Serial Number	Site 	Energy Meter 	AC Controller	Present Sensor 	Ambient Sensor 	Supply Air Sensor
-// ADEST-000001	ADEST-000001-0001	The Hunt	25120		25133	25114	25138
-// ADEST-000001	ADEST-000001-0002	The Hunt	25121	25151	25134	25115	25139
-// ADEST-000001	ADEST-000001-0003	The Hunt	25122	25154	25135	25116	25140
-// ADEST-000001	ADEST-000001-0004	The Hunt	25123	25153	25136	25117	25141
-// ADEST-000001	ADEST-000001-0005	The Hunt	25124	25152	25137	25118	25142
-
   // Get sensors from centralized configuration
   const allSensors = React.useMemo(() => {
     // Convert sensor config to the format expected by the UI
