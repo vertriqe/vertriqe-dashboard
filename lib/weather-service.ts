@@ -117,14 +117,10 @@ export async function fetchWeatherData(lat: string, lon: string): Promise<Weathe
     // Check Redis cache first
     const cachedData = await redis.get(cacheKey)
     if (cachedData) {
-      console.log(`✅ Using cached current weather data for ${lat},${lon}`)
       return JSON.parse(cachedData as string)
     }
 
     const url = `${WEATHER_API_BASE_URL}/current.json?key=${WEATHER_API_KEY}&q=${lat},${lon}&aqi=no`
-
-    console.log(`🌤️ Fetching current weather from: ${url}`)
-
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -132,7 +128,6 @@ export async function fetchWeatherData(lat: string, lon: string): Promise<Weathe
       },
     })
 
-    console.log(`📡 Weather API response status: ${response.status}`)
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -142,8 +137,6 @@ export async function fetchWeatherData(lat: string, lon: string): Promise<Weathe
     }
 
     const data: WeatherData = await response.json()
-    console.log(`✅ Current weather data fetched successfully for ${data.location.name}`)
-    console.log(`🌡️ Temperature: ${data.current.temp_c}°C, Condition: ${data.current.condition.text}`)
 
     // Cache the data in Redis with TTL
     await redis.set(cacheKey, JSON.stringify(data), CACHE_TTL)
@@ -155,7 +148,6 @@ export async function fetchWeatherData(lat: string, lon: string): Promise<Weathe
 }
 
 export function processWeatherData(currentData: WeatherData, locationNameOverride?: string): ProcessedWeatherData {
-  console.log("🔄 Processing weather data...")
 
   const { location, current } = currentData
 
@@ -185,12 +177,9 @@ export function processWeatherData(currentData: WeatherData, locationNameOverrid
 
   // Create estimated temperature range based on current temperature
   const tempRange = `${Math.round(current.temp_c - 2)}/${Math.round(current.temp_c + 2)}°C`
-  console.log(`🌡️ Using estimated temperature range: ${tempRange}`)
 
   // Use override name if provided, otherwise use API's location name
   const displayName = locationNameOverride || location.name
-  console.log(`📍 Using location name: ${displayName}${locationNameOverride ? ' (overridden from Redis)' : ' (from API)'}`)
-
   const processedData = {
     currentTemperature: `${Math.round(current.temp_c)}°C`,
     forecast: {
@@ -211,7 +200,6 @@ export function processWeatherData(currentData: WeatherData, locationNameOverrid
     weeklyWeather,
   }
 
-  console.log("✅ Weather data processed successfully")
   return processedData
 }
 

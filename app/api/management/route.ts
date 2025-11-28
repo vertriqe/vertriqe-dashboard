@@ -52,7 +52,6 @@ async function fetchSensorData(sensorKey: string): Promise<{ value: number; time
 
 
     const result: TSDBResponse = await response.json()
-    console.log("Response body for", sensorKey, result.data.data)
     if (result.success && result.data.success && result.data.data && result.data.data.length > 0) {
       // Get the latest data point
       const latestPoint = result.data.data[result.data.data.length - 1]

@@ -1,0 +1,1155 @@
+"use client"
+
+import React, { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { TrendingUp, Calculator, Download, DollarSign } from "lucide-react"
+import { Chart } from "react-chartjs-2"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ScatterController,
+  LineController
+} from "chart.js"
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ScatterController,
+  LineController
+)
+
+import { getTsdbUrl } from "@/lib/api-config"
+
+interface DataPoint {
+  timestamp: number
+  energy: number
+  temperature: number
+}
+
+interface RegressionResult {
+  equation: string
+  rSquared: number
+  slope: number
+  intercept: number
+  type: 'linear' | 'quadratic' | 'logarithmic'
+  coefficients?: { a?: number, b?: number, c?: number }
+  isManual?: boolean
+}
+
+interface TSDBConfig {
+  success: boolean
+  data: {
+    multipliers: Record<string, number>
+    units: Record<string, string>
+    offsets: Record<string, number>
+  }
+}
+
+export default function RegressionAnalysisPage() {
+  const pathname = usePathname()
+  const [selectedSite, setSelectedSite] = useState("")
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date()
+    date.setMonth(date.getMonth() - 1)
+    return date.toISOString().slice(0, 16)
+  })
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().slice(0, 16)
+  })
+  const [isLoading, setIsLoading] = useState(false)
+  const [data, setData] = useState<DataPoint[]>([])
+  const [originalData, setOriginalData] = useState<DataPoint[]>([])
+  const [removedIndices, setRemovedIndices] = useState<Set<number>>(new Set())
+  const [regressions, setRegressions] = useState<RegressionResult[]>([])
+  const [bestRegression, setBestRegression] = useState<RegressionResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [tsdbConfig, setTsdbConfig] = useState<TSDBConfig | null>(null)
+  const [selectedRegressionIndex, setSelectedRegressionIndex] = useState<number | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [existingBaseline, setExistingBaseline] = useState<any>(null)
+  const [manualType, setManualType] = useState<'linear' | 'quadratic' | 'logarithmic'>('linear')
+  const [manualA, setManualA] = useState<string>("")
+  const [manualB, setManualB] = useState<string>("")
+  const [manualC, setManualC] = useState<string>("")
+  const [manualError, setManualError] = useState<string | null>(null)
+
+  const sites = [
+    { value: "hunt", label: "The Hunt", energyKey: ["vertriqe_25120_cctp","vertriqe_25121_cctp","vertriqe_25122_cctp","vertriqe_25123_cctp","vertriqe_25124_cctp"], tempKey: "weather_thehunt_temp_c" },
+    { value: "weave", label: "Weave Studio", energyKey: ["vertriqe_25245_weave"], tempKey: "weather_thehunt_temp_c" },
+    { value: "haisang", label: "Hai Sang", energyKey: ["vertriqe_24833_cctp"], tempKey: "weather_thehunt_temp_c" },
+    { value: "tnl", label: "TNL", energyKey: ["vertriqe_25415_cctp", "vertriqe_25416_cctp"], tempKey: "weather_thehunt_temp_c" },
+    { value: "coffee", label: "About Coffee Jeju", energyKey: ["vertriqe_25327_temperature"], tempKey: "weather_thehunt_temp_c" },
+    { value: "telstar", label: "Telstar Office", energyKey: ["vertriqe_25253_cttp","vertriqe_25255_cttp","vertriqe_25256_cttp","vertriqe_25233_cttp","vertriqe_25257_cttp","vertriqe_25258_cttp"], tempKey: "weather_telstar_temp_c" }
+  ]
+
+  const getKeyConfig = (key: string) => {
+    if (!tsdbConfig) return { multiplier: 1, unit: "", offset: 0 }
+    for (const pattern in tsdbConfig.data.multipliers) {
+      const regex = new RegExp(pattern.replace('*', '.*'))
+      if (regex.test(key)) {
+        return {
+          multiplier: tsdbConfig.data.multipliers[pattern] || 1,
+          unit: tsdbConfig.data.units[pattern] || "",
+          offset: tsdbConfig.data.offsets[pattern] || 0
+        }
+      }
+    }
+    return { multiplier: 1, unit: "", offset: 0 }
+  }
+
+  const fetchTsdbConfig = async () => {
+    try {
+      const response = await fetch(getTsdbUrl(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ operation: "getapiurlconfig" })
+      })
+      if (!response.ok) {
+        throw new Error("Failed to fetch TSDB config")
+      }
+      const config: TSDBConfig = await response.json()
+      setTsdbConfig(config)
+      console.log("TSDB Config loaded:", config)
+    } catch (err) {
+      console.error("Error fetching TSDB config:", err)
+    }
+  }
+
+  useEffect(() => {
+    fetchTsdbConfig()
+  }, [])
+
+  const handleRemoveDataPoint = (index: number) => {
+    setRemovedIndices(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }
+
+  const handleResetDataPoints = () => {
+    setRemovedIndices(new Set())
+  }
+
+  React.useEffect(() => {
+    if (originalData.length > 0) {
+      const filtered = originalData.filter((_, index) => !removedIndices.has(index))
+      setData(filtered)
+    }
+  }, [removedIndices, originalData])
+
+  const clearManualCurves = () => {
+    setRegressions(prev => {
+      const kept = prev.filter(r => !r.isManual)
+      if (selectedRegressionIndex !== null) {
+        const selected = prev[selectedRegressionIndex]
+        if (selected?.isManual) {
+          setSelectedRegressionIndex(null)
+        } else {
+          const newIndex = kept.findIndex(r => r === selected)
+          setSelectedRegressionIndex(newIndex >= 0 ? newIndex : null)
+        }
+      }
+      const autos = kept.filter(r => !r.isManual)
+      if (autos.length > 0) {
+        const best = [...autos].sort((a, b) => b.rSquared - a.rSquared)[0]
+        setBestRegression(best)
+      } else {
+        setBestRegression(null)
+      }
+      return kept
+    })
+  }
+
+  const saveBaseline = async () => {
+    if (selectedRegressionIndex === null || !selectedSite || regressions.length === 0) {
+      setSaveMessage("Please select a site and regression model first")
+      return
+    }
+
+    setIsSaving(true)
+    setSaveMessage(null)
+
+    try {
+      const selectedRegression = regressions[selectedRegressionIndex]
+      const site = sites.find(s => s.value === selectedSite)
+
+      const baselineData = {
+        siteId: selectedSite,
+        siteName: site?.label || selectedSite,
+        regression: selectedRegression,
+        dataRange: {
+          start: startDate,
+          end: endDate,
+          dataPoints: data.length
+        },
+        createdAt: new Date().toISOString(),
+        energyKey: site?.energyKey,
+        tempKey: site?.tempKey
+      }
+
+      const response = await fetch('/api/baseline', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(baselineData)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save baseline')
+      }
+
+      setSaveMessage(`Baseline saved successfully for ${site?.label}`)
+      setTimeout(() => setSaveMessage(null), 5000)
+
+    } catch (err) {
+      setSaveMessage(err instanceof Error ? err.message : "Failed to save baseline")
+      setTimeout(() => setSaveMessage(null), 5000)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const loadExistingBaseline = async (siteId: string) => {
+    try {
+      const response = await fetch(`/api/baseline?siteId=${siteId}`)
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setExistingBaseline(result.data)
+        }
+      } else {
+        setExistingBaseline(null)
+      }
+    } catch (err) {
+      console.error("Error loading existing baseline:", err)
+      setExistingBaseline(null)
+    }
+  }
+
+  useEffect(() => {
+    if (selectedSite) {
+      loadExistingBaseline(selectedSite)
+    } else {
+      setExistingBaseline(null)
+    }
+  }, [selectedSite])
+
+  async function fetchData() {
+    if (!selectedSite || !startDate || !endDate) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const site = sites.find(s => s.value === selectedSite)!
+      const start = Math.floor(new Date(startDate).getTime() / 1000)
+      const end = Math.floor(new Date(endDate).getTime() / 1000)
+
+      const energyKeys: string[] = Array.isArray(site.energyKey) ? site.energyKey : [site.energyKey]
+
+      console.log("Fetching energy data for keys:", energyKeys)
+
+      const energyResponses = await Promise.all(
+        energyKeys.map((key: string) =>
+          fetch("/api/tsdb", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-url": "http://35.221.150.154:5556"
+            },
+            body: JSON.stringify({
+              operation: "read",
+              key: key,
+              Read: {
+                start_timestamp: start,
+                end_timestamp: end,
+                downsampling: 3600,
+                aggregation: "max"
+              }
+            })
+          })
+        )
+      )
+
+      const tempResponse = await fetch("/api/tsdb", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-url": "http://35.221.150.154:5556"
+        },
+        body: JSON.stringify({
+          operation: "read",
+          key: site.tempKey,
+          Read: {
+            start_timestamp: start,
+            end_timestamp: end,
+            downsampling: 3600,
+            aggregation: "avg"
+          }
+        })
+      })
+
+      const energyDataArray = await Promise.all(energyResponses.map((r: Response) => r.json()))
+      const tempData = await tempResponse.json()
+
+      console.log("Energy data responses:", energyDataArray)
+      console.log("Temperature data response:", tempData)
+
+      if (energyDataArray.some((d: any) => !d.success) || !tempData.success) {
+        throw new Error("Failed to fetch data from TSDB")
+      }
+
+      const getLocalDayStart = (tsSec: number) => {
+        const d = new Date(tsSec * 1000)
+        d.setHours(0, 0, 0, 0)
+        return Math.floor(d.getTime() / 1000)
+      }
+
+      const energyByDay = new Map<number, number>()
+      energyDataArray.forEach((energyData: any, idx: number) => {
+        const key = energyKeys[idx]
+        const keyConfig = getKeyConfig(key)
+        const points = energyData.data?.data || []
+        console.log(`[DEBUG] Energy key ${key} (${points.length} points), keyConfig:`, keyConfig)
+        const perDayMax = new Map<number, number>()
+        points.forEach((pt: any) => {
+          const day = getLocalDayStart(pt.timestamp)
+          const processed = (pt.value ?? 0) * keyConfig.multiplier + keyConfig.offset
+          const prev = perDayMax.get(day) ?? 0
+          if (processed > prev) perDayMax.set(day, processed)
+        })
+        perDayMax.forEach((val, day) => {
+          energyByDay.set(day, (energyByDay.get(day) || 0) + val)
+        })
+      })
+
+      const tempConfig = getKeyConfig(site.tempKey)
+      const tempPoints = tempData.data?.data || []
+      const tempAgg = new Map<number, { sum: number; count: number }>()
+      tempPoints.forEach((pt: any) => {
+        const day = getLocalDayStart(pt.timestamp)
+        const processed = (pt.value ?? 0) * tempConfig.multiplier + tempConfig.offset
+        const cur = tempAgg.get(day) || { sum: 0, count: 0 }
+        cur.sum += processed
+        cur.count += 1
+        tempAgg.set(day, cur)
+      })
+
+      const commonDays = Array.from(energyByDay.keys()).filter(d => tempAgg.has(d)).sort((a, b) => a - b)
+      const combined: DataPoint[] = commonDays.map(day => ({
+        timestamp: day,
+        energy: energyByDay.get(day) || 0,
+        temperature: (tempAgg.get(day)!.sum / tempAgg.get(day)!.count)
+      }))
+
+      console.log(`[DEBUG] Combined daily points: ${combined.length}`)
+      console.log(`[DEBUG] Sample combined data:`, combined.slice(0, 3))
+
+      setOriginalData(combined)
+      setData(combined)
+      setRemovedIndices(new Set())
+      setRegressions([])
+      setBestRegression(null)
+      setSelectedRegressionIndex(null)
+      setSaveMessage(null)
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function calculateRegression() {
+    if (data.length < 3) {
+      setError("Need at least 3 data points for regression")
+      return
+    }
+
+    const n = data.length
+    const x = data.map(d => d.temperature)
+    const y = data.map(d => d.energy)
+    const results: RegressionResult[] = []
+
+    const sumX = x.reduce((a, b) => a + b, 0)
+    const sumY = y.reduce((a, b) => a + b, 0)
+    const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0)
+    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0)
+    const yMean = sumY / n
+    const ssTot = y.reduce((sum, yi) => sum + Math.pow(yi - yMean, 2), 0)
+
+    // Linear Regression
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
+    const intercept = (sumY - slope * sumX) / n
+    const ssResLinear = y.reduce((sum, yi, i) => sum + Math.pow(yi - (slope * x[i] + intercept), 2), 0)
+    const rSquaredLinear = 1 - (ssResLinear / ssTot)
+
+    results.push({
+      equation: `y = ${slope.toFixed(6)}x + ${intercept.toFixed(6)}`,
+      rSquared: rSquaredLinear,
+      slope,
+      intercept,
+      type: 'linear',
+      coefficients: { a: slope, b: intercept },
+      isManual: false
+    })
+
+    // Quadratic Regression
+    try {
+      const sumX3 = x.reduce((sum, xi) => sum + Math.pow(xi, 3), 0)
+      const sumX4 = x.reduce((sum, xi) => sum + Math.pow(xi, 4), 0)
+      const sumX2Y = x.reduce((sum, xi, i) => sum + xi * xi * y[i], 0)
+
+      const A = [
+        [n, sumX, sumX2],
+        [sumX, sumX2, sumX3],
+        [sumX2, sumX3, sumX4]
+      ]
+      const B = [sumY, sumXY, sumX2Y]
+
+      const matrix = A.map((row, i) => [...row, B[i]])
+
+      for (let i = 0; i < 3; i++) {
+        let maxRow = i
+        for (let k = i + 1; k < 3; k++) {
+          if (Math.abs(matrix[k][i]) > Math.abs(matrix[maxRow][i])) {
+            maxRow = k
+          }
+        }
+
+        [matrix[i], matrix[maxRow]] = [matrix[maxRow], matrix[i]]
+
+        if (Math.abs(matrix[i][i]) < 1e-12) {
+          throw new Error("Singular matrix")
+        }
+
+        for (let k = i + 1; k < 3; k++) {
+          const factor = matrix[k][i] / matrix[i][i]
+          for (let j = i; j < 4; j++) {
+            matrix[k][j] -= factor * matrix[i][j]
+          }
+        }
+      }
+
+      const coeffs = new Array(3)
+      for (let i = 2; i >= 0; i--) {
+        coeffs[i] = matrix[i][3]
+        for (let j = i + 1; j < 3; j++) {
+          coeffs[i] -= matrix[i][j] * coeffs[j]
+        }
+        coeffs[i] /= matrix[i][i]
+      }
+
+      const [c, b, a] = coeffs
+
+      const ssResQuad = y.reduce((sum, yi, i) => sum + Math.pow(yi - (a * x[i] * x[i] + b * x[i] + c), 2), 0)
+      const rSquaredQuad = 1 - (ssResQuad / ssTot)
+
+      if (isFinite(rSquaredQuad) && rSquaredQuad >= -0.1 && rSquaredQuad <= 1.1) {
+        results.push({
+          equation: `y = ${a.toFixed(6)}x² + ${b.toFixed(6)}x + ${c.toFixed(6)}`,
+          rSquared: Math.max(0, Math.min(1, rSquaredQuad)),
+          slope: a,
+          intercept: c,
+          type: 'quadratic',
+          coefficients: { a, b, c },
+          isManual: false
+        })
+      }
+    } catch (error) {
+      console.warn("Quadratic regression failed:", error instanceof Error ? error.message : "Unknown error")
+    }
+
+    // Logarithmic Regression
+    if (x.every(xi => xi > 0)) {
+      const lnX = x.map(xi => Math.log(xi))
+      const sumLnX = lnX.reduce((a, b) => a + b, 0)
+      const sumLnXY = lnX.reduce((sum, lnXi, i) => sum + lnXi * y[i], 0)
+      const sumLnX2 = lnX.reduce((sum, lnXi) => sum + lnXi * lnXi, 0)
+
+      const slopeLog = (n * sumLnXY - sumLnX * sumY) / (n * sumLnX2 - sumLnX * sumLnX)
+      const interceptLog = (sumY - slopeLog * sumLnX) / n
+
+      const ssResLog = y.reduce((sum, yi, i) => sum + Math.pow(yi - (slopeLog * Math.log(x[i]) + interceptLog), 2), 0)
+      const rSquaredLog = 1 - (ssResLog / ssTot)
+
+      results.push({
+        equation: `y = ${slopeLog.toFixed(6)}*ln(x) + ${interceptLog.toFixed(6)}`,
+        rSquared: rSquaredLog,
+        slope: slopeLog,
+        intercept: interceptLog,
+        type: 'logarithmic',
+        coefficients: { a: slopeLog, b: interceptLog },
+        isManual: false
+      })
+    }
+
+    results.sort((a, b) => b.rSquared - a.rSquared)
+
+    setRegressions(results)
+    setBestRegression(results[0] || null)
+  }
+
+  function exportResults() {
+    if (regressions.length === 0 || data.length === 0) return
+
+    const csvContent = [
+      ["timestamp", "temperature", "energy"],
+      ...data.map(point => [
+        new Date(point.timestamp * 1000).toISOString(),
+        point.temperature.toString(),
+        point.energy.toString()
+      ]),
+      [],
+      ["Regression Analysis Results"],
+      ["Rank", "Type", "Equation", "R-squared", "Primary Coefficient", "Intercept"],
+      ...regressions.map((reg, index) => [
+        (index + 1).toString(),
+        reg.type,
+        reg.equation,
+        reg.rSquared.toString(),
+        reg.slope.toString(),
+        reg.intercept.toString()
+      ]),
+      [],
+      ["Best Fit Model"],
+      ["Type", bestRegression?.type || ""],
+      ["Equation", bestRegression?.equation || ""],
+      ["R-squared", bestRegression?.rSquared.toString() || ""],
+      [],
+      ["Notes"],
+      ["Models are ranked by R-squared value (higher is better)"],
+      ["Linear: y = mx + b"],
+      ["Quadratic: y = ax² + bx + c"],
+      ["Logarithmic: y = a*ln(x) + b"]
+    ].map(row => row.join(",")).join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv" })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `regression-analysis-${selectedSite}-${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="space-y-6 p-6">
+      <div className="flex items-center gap-3">
+        <TrendingUp className="h-8 w-8 text-blue-500" />
+        <div>
+          <h1 className="text-3xl font-bold text-white">Energy vs Temperature Regression Analysis</h1>
+          <p className="text-slate-400">Analyze energy consumption patterns relative to temperature</p>
+        </div>
+        <Badge variant="destructive" className="ml-auto">
+          Restricted Access
+        </Badge>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 border-b border-slate-700">
+        <Link href="/super-admin/bill-analysis">
+          <Button 
+            variant="ghost" 
+            className={`rounded-b-none ${pathname === '/super-admin/bill-analysis' ? 'border-b-2 border-green-500 text-green-400' : 'text-slate-400'}`}
+          >
+            <DollarSign className="h-4 w-4 mr-2" />
+            Bill Analysis
+          </Button>
+        </Link>
+        <Link href="/super-admin/regression-analysis">
+          <Button 
+            variant="ghost" 
+            className={`rounded-b-none ${pathname === '/super-admin/regression-analysis' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-slate-400'}`}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Regression Analysis
+          </Button>
+        </Link>
+      </div>
+
+      {/* Energy vs Temperature Regression Analysis */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <TrendingUp className="h-6 w-6 text-blue-500" />
+            <CardTitle className="text-white">Energy vs Temperature Regression Analysis</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label className="text-white">Site</Label>
+              <Select value={selectedSite} onValueChange={setSelectedSite}>
+                <SelectTrigger className="bg-slate-700 border-slate-600">
+                  <SelectValue placeholder="Select site" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-700 border-slate-600">
+                  {sites.map((site) => (
+                    <SelectItem key={site.value} value={site.value}>
+                      {site.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="startDate" className="text-white">Start Date</Label>
+              <Input
+                id="startDate"
+                type="datetime-local"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-slate-700 border-slate-600"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="endDate" className="text-white">End Date</Label>
+              <Input
+                id="endDate"
+                type="datetime-local"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-slate-700 border-slate-600"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-white">Actions</Label>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  onClick={fetchData}
+                  disabled={!selectedSite || !startDate || !endDate || isLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isLoading ? "Loading..." : "Fetch Data"}
+                </Button>
+                <Button
+                  onClick={calculateRegression}
+                  disabled={data.length === 0}
+                  variant="outline"
+                  className="border-slate-600"
+                >
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Calculate
+                </Button>
+                {removedIndices.size > 0 && (
+                  <Button
+                    onClick={handleResetDataPoints}
+                    variant="outline"
+                    className="border-orange-600 text-orange-400 hover:bg-orange-900/20"
+                  >
+                    Reset {removedIndices.size} Removed Point{removedIndices.size > 1 ? 's' : ''}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="p-4 bg-red-900/50 border border-red-700 rounded-md">
+              <p className="text-red-200">{error}</p>
+            </div>
+          )}
+
+          {/* Existing Baseline */}
+          {existingBaseline && (
+            <div className="p-4 bg-purple-900/30 border border-purple-700 rounded-md">
+              <h4 className="font-semibold text-purple-400 mb-2">Current Baseline</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-slate-300">Model Type: <span className="text-purple-400 capitalize">{existingBaseline.regression.type}</span></p>
+                  <p className="text-slate-300">R²: <span className="text-purple-400">{existingBaseline.regression.rSquared.toFixed(4)}</span></p>
+                  <p className="text-slate-300">Created: <span className="text-purple-400">{new Date(existingBaseline.createdAt).toLocaleDateString()}</span></p>
+                </div>
+                <div>
+                  <p className="text-slate-300 mb-1">Equation:</p>
+                  <code className="bg-slate-800 p-2 rounded text-cyan-400 block text-xs">
+                    {existingBaseline.regression.equation}
+                  </code>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Debug info */}
+          {data.length === 0 && !isLoading && !error && (
+            <div className="p-4 bg-yellow-900/50 border border-yellow-700 rounded-md">
+              <p className="text-yellow-200">No data to display. Select a site and date range, then click Fetch Data.</p>
+            </div>
+          )}
+
+          {/* Results */}
+          {data.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Scatter Plot */}
+              <Card className="bg-slate-900/50 border-slate-600">
+                <CardHeader>
+                  <CardTitle className="text-white">Energy vs Temperature</CardTitle>
+                  <p className="text-sm text-slate-400 mt-2">
+                    Click on data points to remove outliers. Removed points appear as red crosses.
+                    {removedIndices.size > 0 && ` (${removedIndices.size} point${removedIndices.size > 1 ? 's' : ''} removed)`}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-96">
+                    <Chart
+                      type="scatter"
+                      data={{
+                        datasets: [
+                          {
+                            label: "Energy vs Temperature (Active)",
+                            data: originalData
+                              .map((point, index) => ({
+                                x: point.temperature,
+                                y: point.energy,
+                                originalIndex: index
+                              }))
+                              .filter((_, index) => !removedIndices.has(index)),
+                            backgroundColor: "rgba(34, 211, 238, 0.6)",
+                            borderColor: "rgba(34, 211, 238, 1)",
+                            pointRadius: 5,
+                            showLine: false,
+                            type: 'scatter' as const
+                          },
+                          {
+                            label: "Removed Outliers",
+                            data: originalData
+                              .map((point, index) => ({
+                                x: point.temperature,
+                                y: point.energy,
+                                originalIndex: index
+                              }))
+                              .filter((_, index) => removedIndices.has(index)),
+                            backgroundColor: "rgba(239, 68, 68, 0.4)",
+                            borderColor: "rgba(239, 68, 68, 0.8)",
+                            pointRadius: 5,
+                            pointStyle: 'cross',
+                            showLine: false,
+                            type: 'scatter' as const
+                          },
+                          ...regressions.map((reg, index) => {
+                            const tempRange = data.length > 0 ? {
+                              min: Math.min(...data.map(p => p.temperature)),
+                              max: Math.max(...data.map(p => p.temperature))
+                            } : { min: 0, max: 30 }
+
+                            const linePoints = Array.from({ length: 100 }, (_, i) => {
+                              const x = tempRange.min + (tempRange.max - tempRange.min) * i / 99
+                              let y: number
+
+                              if (reg.type === 'linear') {
+                                y = reg.slope * x + reg.intercept
+                              } else if (reg.type === 'quadratic' && reg.coefficients) {
+                                const { a, b, c } = reg.coefficients
+                                y = (a || 0) * x * x + (b || 0) * x + (c || 0)
+                              } else if (reg.type === 'logarithmic' && x > 0) {
+                                y = reg.slope * Math.log(x) + reg.intercept
+                              } else {
+                                y = 0
+                              }
+
+                              return { x, y }
+                            })
+
+                            const colors = [
+                              'rgba(34, 197, 94, 1)',
+                              'rgba(251, 191, 36, 1)',
+                              'rgba(239, 68, 68, 1)'
+                            ]
+
+                            return {
+                              label: `${reg.type.charAt(0).toUpperCase() + reg.type.slice(1)} (R²=${reg.rSquared.toFixed(3)})`,
+                              data: linePoints,
+                              backgroundColor: colors[index] || 'rgba(156, 163, 175, 1)',
+                              borderColor: colors[index] || 'rgba(156, 163, 175, 1)',
+                              borderWidth: 2,
+                              pointRadius: 0,
+                              pointHoverRadius: 0,
+                              showLine: true,
+                              fill: false,
+                              type: 'line' as const,
+                              tension: 0
+                            } as any
+                          })
+                        ]
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        onClick: (event: any, elements: any) => {
+                          if (elements.length > 0) {
+                            const element = elements[0]
+                            if (element.datasetIndex === 0 || element.datasetIndex === 1) {
+                              const dataset = element.datasetIndex === 0
+                                ? originalData.filter((_, index) => !removedIndices.has(index))
+                                : originalData.filter((_, index) => removedIndices.has(index))
+
+                              const clickedPoint = dataset[element.index]
+                              const originalIndex = originalData.findIndex(
+                                p => p.temperature === clickedPoint.temperature && p.energy === clickedPoint.energy
+                              )
+                              if (originalIndex !== -1) {
+                                handleRemoveDataPoint(originalIndex)
+                              }
+                            }
+                          }
+                        },
+                        plugins: {
+                          legend: {
+                            labels: { color: 'white' }
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: (context: any) => {
+                                if (context.datasetIndex === 0) {
+                                  return `Temperature: ${context.parsed.x.toFixed(2)}°C, Energy: ${context.parsed.y.toFixed(2)} (Click to remove)`
+                                }
+                                return context.dataset.label
+                              }
+                            }
+                          }
+                        },
+                        scales: {
+                          x: {
+                            title: {
+                              display: true,
+                              text: 'Temperature (°C)',
+                              color: 'white'
+                            },
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                          },
+                          y: {
+                            title: {
+                              display: true,
+                              text: `Energy (${tsdbConfig ? (() => {
+                                const energyKey = sites.find(s => s.value === selectedSite)?.energyKey || ""
+                                const key = Array.isArray(energyKey) ? energyKey[0] : energyKey
+                                return getKeyConfig(key).unit || "kW"
+                              })() : "kW"})`,
+                              color: 'white'
+                            },
+                            ticks: { color: 'white' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Regression Results */}
+              <Card className="bg-slate-900/50 border-slate-600">
+                <CardHeader>
+                  <CardTitle className="text-white">Regression Results</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Manual Model Input */}
+                  <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-md space-y-3">
+                    <h4 className="font-semibold text-white">Manual Model</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                      <div className="md:col-span-2">
+                        <Label className="text-slate-300">Type</Label>
+                        <Select value={manualType} onValueChange={(v) => setManualType(v as any)}>
+                          <SelectTrigger className="bg-slate-700 border-slate-600">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-700 border-slate-600">
+                            <SelectItem value="linear">Linear (y = a x + b)</SelectItem>
+                            <SelectItem value="quadratic">Quadratic (y = a x² + b x + c)</SelectItem>
+                            <SelectItem value="logarithmic">Logarithmic (y = a*ln(x) + b)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">a</Label>
+                        <Input value={manualA} onChange={(e) => setManualA(e.target.value)} placeholder="a" className="bg-slate-700 border-slate-600" />
+                      </div>
+                      <div>
+                        <Label className="text-slate-300">b</Label>
+                        <Input value={manualB} onChange={(e) => setManualB(e.target.value)} placeholder="b" className="bg-slate-700 border-slate-600" />
+                      </div>
+                      {manualType === 'quadratic' && (
+                        <div>
+                          <Label className="text-slate-300">c</Label>
+                          <Input value={manualC} onChange={(e) => setManualC(e.target.value)} placeholder="c" className="bg-slate-700 border-slate-600" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        onClick={() => {
+                          if (data.length < 3) {
+                            setManualError('Need at least 3 data points to evaluate the model')
+                            return
+                          }
+                          const a = parseFloat(manualA || '0')
+                          const b = parseFloat(manualB || '0')
+                          const c = parseFloat(manualC || '0')
+                          const x = data.map(d => d.temperature)
+                          const y = data.map(d => d.energy)
+                          if (manualType === 'logarithmic' && !x.every(v => v > 0)) {
+                            setManualError('Logarithmic model requires all temperatures > 0')
+                            return
+                          }
+                          const n = y.length
+                          const yMean = y.reduce((s, v) => s + v, 0) / n
+                          const ssTot = y.reduce((s, yi) => s + Math.pow(yi - yMean, 2), 0)
+                          const predict = (val: number) => {
+                            if (manualType === 'linear') return a * val + b
+                            if (manualType === 'quadratic') return a * val * val + b * val + c
+                            return a * Math.log(val) + b
+                          }
+                          const ssRes = y.reduce((s, yi, i) => s + Math.pow(yi - predict(x[i]), 2), 0)
+                          const rSquared = 1 - (ssRes / ssTot)
+
+                          const equation = manualType === 'linear'
+                            ? `y = ${a.toFixed(6)}x + ${b.toFixed(6)}`
+                            : manualType === 'quadratic'
+                              ? `y = ${a.toFixed(6)}x² + ${b.toFixed(6)}x + ${c.toFixed(6)}`
+                              : `y = ${a.toFixed(6)}*ln(x) + ${b.toFixed(6)}`
+
+                          const reg: RegressionResult = manualType === 'quadratic' ? {
+                            equation,
+                            rSquared,
+                            slope: a,
+                            intercept: c,
+                            type: 'quadratic',
+                            coefficients: { a, b, c },
+                            isManual: true
+                          } : manualType === 'linear' ? {
+                            equation,
+                            rSquared,
+                            slope: a,
+                            intercept: b,
+                            type: 'linear',
+                            coefficients: { a, b },
+                            isManual: true
+                          } : {
+                            equation,
+                            rSquared,
+                            slope: a,
+                            intercept: b,
+                            type: 'logarithmic',
+                            coefficients: { a, b },
+                            isManual: true
+                          }
+
+                          const newList = [...regressions, reg]
+                          setRegressions(newList)
+                          setSelectedRegressionIndex(newList.length - 1)
+                          setManualError(null)
+                        }}
+                        disabled={data.length === 0}
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        Preview on Chart
+                      </Button>
+                      <Button
+                        onClick={clearManualCurves}
+                        type="button"
+                        variant="outline"
+                        className="border-slate-600"
+                        disabled={regressions.filter(r => r.isManual).length === 0}
+                      >
+                        Clear manual curves
+                      </Button>
+                      {selectedRegressionIndex !== null && (
+                        <Button
+                          onClick={saveBaseline}
+                          disabled={isSaving}
+                          variant="outline"
+                          className="border-slate-600"
+                        >
+                          Save as Baseline
+                        </Button>
+                      )}
+                    </div>
+                    {manualError && (
+                      <div className="p-2 text-sm rounded bg-red-900/40 border border-red-700 text-red-200">{manualError}</div>
+                    )}
+                    <p className="text-xs text-slate-400">Tip: Linear uses a (slope) and b (intercept). Quadratic uses a, b, c. Logarithmic uses a and b.</p>
+                  </div>
+
+                  {regressions.length > 0 ? (
+                    <>
+                      {/* Best Fit Highlight */}
+                      {bestRegression && (
+                        <div className="p-4 bg-green-900/30 border border-green-700 rounded-md">
+                          <h4 className="font-semibold text-green-400 mb-2">Best Fit ({bestRegression.type}):</h4>
+                          <code className="bg-slate-800 p-2 rounded text-cyan-400 block text-sm">
+                            {bestRegression.equation}
+                          </code>
+                          <p className="text-green-400 mt-2">
+                            R² = {bestRegression.rSquared.toFixed(4)}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* All Results */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-white">All Models:</h4>
+                        {regressions.map((reg, index) => (
+                          <div key={index} className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                            selectedRegressionIndex === index
+                              ? 'bg-blue-900/30 border-blue-500'
+                              : index === 0
+                                ? 'bg-green-900/20 border-green-700 hover:bg-green-900/30'
+                                : 'bg-slate-800/50 border-slate-600 hover:bg-slate-700/50'
+                          }`}
+                          onClick={() => setSelectedRegressionIndex(index)}
+                          >
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="radio"
+                                  checked={selectedRegressionIndex === index}
+                                  onChange={() => setSelectedRegressionIndex(index)}
+                                  className="text-blue-500"
+                                />
+                                <span className="text-white capitalize font-medium">{reg.type}</span>
+                                {index === 0 && <Badge variant="secondary" className="text-xs">Best</Badge>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-slate-300">R²:</span>
+                                <span className={`font-bold ${
+                                  reg.rSquared > 0.8 ? 'text-green-400' :
+                                  reg.rSquared > 0.6 ? 'text-yellow-400' : 'text-red-400'
+                                }`}>
+                                  {reg.rSquared.toFixed(4)}
+                                </span>
+                              </div>
+                            </div>
+                            <code className="bg-slate-800 p-2 rounded text-cyan-400 block text-xs">
+                              {reg.equation}
+                            </code>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Baseline Selection */}
+                      {selectedRegressionIndex !== null && (
+                        <div className="p-4 bg-blue-900/20 border border-blue-700 rounded-md">
+                          <h4 className="font-semibold text-blue-400 mb-2">Save as Baseline</h4>
+                          <p className="text-sm text-slate-300 mb-3">
+                            Save the selected {regressions[selectedRegressionIndex]?.type} regression as the baseline
+                            model for {sites.find(s => s.value === selectedSite)?.label}. This will be used for
+                            energy projection calculations.
+                          </p>
+                          <Button
+                            onClick={saveBaseline}
+                            disabled={isSaving}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            {isSaving ? "Saving..." : "Save as Baseline"}
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Save Message */}
+                      {saveMessage && (
+                        <div className={`p-3 rounded-md ${
+                          saveMessage.includes('successfully')
+                            ? 'bg-green-900/50 border border-green-700 text-green-200'
+                            : 'bg-red-900/50 border border-red-700 text-red-200'
+                        }`}>
+                          {saveMessage}
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={exportResults}
+                        variant="outline"
+                        className="w-full border-slate-600"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Export Results
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-slate-400">
+                      Click &quot;Calculate&quot; to perform regression analysis
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Data Summary */}
+          {data.length > 0 && (
+            <Card className="bg-slate-900/50 border-slate-600">
+              <CardHeader>
+                <CardTitle className="text-white">Data Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p className="text-slate-400">Data Points</p>
+                    <p className="text-2xl font-bold text-white">{data.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400">Avg Temperature</p>
+                    <p className="text-2xl font-bold text-white">
+                      {(data.reduce((sum, p) => sum + p.temperature, 0) / data.length).toFixed(1)}°C
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400">Avg Energy</p>
+                    <p className="text-2xl font-bold text-white">
+                      {(data.reduce((sum, p) => sum + p.energy, 0) / data.length).toFixed(2)} {tsdbConfig ? (() => {
+                        const energyKey = sites.find(s => s.value === selectedSite)?.energyKey || ""
+                        const key = Array.isArray(energyKey) ? energyKey[0] : energyKey
+                        return getKeyConfig(key).unit || "kW"
+                      })() : "kW"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400">Date Range</p>
+                    <p className="text-sm text-white">
+                      {new Date(data[0]?.timestamp * 1000).toLocaleDateString()} - {new Date(data[data.length - 1]?.timestamp * 1000).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

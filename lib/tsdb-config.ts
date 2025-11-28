@@ -43,7 +43,6 @@ export async function fetchTsdbConfig(): Promise<TSDBConfig | null> {
     // Check Redis cache first
     const cachedConfig = await redis.get("tsdb_config")
     if (cachedConfig) {
-      console.log("✅ Using cached TSDB config")
       return JSON.parse(cachedConfig as string)
     }
 

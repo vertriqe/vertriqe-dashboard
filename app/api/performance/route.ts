@@ -392,12 +392,8 @@ async function fetchWeeklyAggregatedData(sensorKeys: string[]): Promise<{
     })
   )
 
-  // Find the sensor with the most data points
-  const maxDataSensor = allSensorData.reduce((max, current) =>
-    current.values.length > max.values.length ? current : max
-  )
-
-  if (maxDataSensor.values.length === 0) {
+  // Check if we have any sensor data
+  if (allSensorData.length === 0 || allSensorData.every(sensor => sensor.values.length === 0)) {
     console.log("No hourly data found, returning realistic dummy data")
     // Return realistic dummy data with proper proportions
     const dummyTimestamps = Array.from({ length: 7 }, (_, i) => {
@@ -428,9 +424,14 @@ async function fetchWeeklyAggregatedData(sensorKeys: string[]): Promise<{
       normalPercentage,
       otPercentage,
       labels: dummyTimestamps.map(ts => formatToGMT8(ts, 'week')),
-      timestamps: dummyTimestamps
+      timestamps: dummyTimestamps,
     }
   }
+
+  // Find the sensor with the most data points
+  const maxDataSensor = allSensorData.reduce((max, current) =>
+    current.values.length > max.values.length ? current : max
+  )
 
   // Combine all sensor data
   const combinedHourlyData = maxDataSensor.values.map((_: number, index: number) => {
