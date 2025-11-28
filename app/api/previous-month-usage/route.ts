@@ -3,7 +3,6 @@ import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { getTsdbUrl } from "@/lib/api-config"
 import { fetchTsdbConfig, processTsdbData } from "@/lib/tsdb-config"
-import { redis } from "@/lib/redis"
 
 async function getUserFromToken(): Promise<{ email: string; name: string } | null> {
   try {

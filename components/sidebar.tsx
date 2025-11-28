@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Home, Briefcase, Users, Zap, BarChart3, Settings, Shield } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -9,13 +8,10 @@ import { SuperAdminSwitcher } from "./super-admin-switcher"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useUser } from "@/contexts/user-context"
-import Image from "next/image"
 
 export function Sidebar() {
   const pathname = usePathname()
   const { user, isSuperAdmin } = useUser()
-  const isHuntUser = user?.name === "The Hunt"
-  const isWeaveUser = user?.name === "Weave Studio"
 
   const navItems = [
     {

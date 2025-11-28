@@ -39,7 +39,7 @@ export async function fetchDailyEnergy(
     let totalEnergy = 0
     let totalPoints = 0
     let errorMsg = ""
-    let isSpecial = keys.every(k => k.endsWith('_cttp') || k.endsWith('_weave'))
+    const isSpecial = keys.every(k => k.endsWith('_cttp') || k.endsWith('_weave'))
     // Fetch TSDB config for multipliers
     const tsdbConfig = await fetchTsdbConfig()
     for (const key of keys) {

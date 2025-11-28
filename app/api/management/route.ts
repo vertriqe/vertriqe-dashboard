@@ -3,7 +3,7 @@ import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { redis } from "@/lib/redis"
 import { fetchWeatherData, processWeatherData, type WeatherLocation } from "@/lib/weather-service"
-import { fetchTsdbConfig, getKeyConfig, type TSDBDataPoint, type TSDBResponse, type TSDBConfig } from "@/lib/tsdb-config"
+import { fetchTsdbConfig, getKeyConfig, type TSDBResponse } from "@/lib/tsdb-config"
 import { getTsdbUrl } from "@/lib/api-config"
 import { getZonesByOwner } from "@/lib/sensor-config"
 

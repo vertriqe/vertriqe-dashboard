@@ -819,7 +819,7 @@ export async function GET(request: Request) {
     const tsdbConfig = await fetchTsdbConfig()
 
     // Define The Hunt's energy meter sensors (cumulative consumption)
-    let energyMeterSensors = getSensorsByOwner(user.name)
+    const energyMeterSensors = getSensorsByOwner(user.name)
       .filter(sensor => sensor.name.endsWith("_cttp") || sensor.name.endsWith("_weave"))
       .map(sensor => sensor.key)
 

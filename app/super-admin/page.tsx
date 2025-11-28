@@ -2047,7 +2047,7 @@ export default function SuperAdminPage() {
                     </>
                   ) : (
                     <p className="text-slate-400">
-                      Click "Calculate" to perform regression analysis
+                      Click &quot;Calculate&quot; to perform regression analysis
                     </p>
                   )}
                 </CardContent>

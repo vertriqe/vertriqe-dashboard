@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { fetchCurrentSummedPower, fetchDailyEnergy } from "@/lib/energy-utils"
+import { fetchCurrentSummedPower } from "@/lib/energy-utils"
 import { getKeysForSerial, getMeterMapping } from "@/lib/serial-mapping"
 
 const VALID_TOKEN = "dualmint_sFD05QtMc1cEoiYt"

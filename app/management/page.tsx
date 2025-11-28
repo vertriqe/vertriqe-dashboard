@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Thermometer, Droplets, HelpCircle, Leaf } from "lucide-react"
@@ -10,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { useUser } from "@/contexts/user-context"
 import { getLogoForUser } from "@/lib/logo-utils"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
-import Image from "next/image"
 
 interface ManagementData {
   date: string
@@ -42,8 +40,12 @@ export default function ManagementPage() {
   const { user, isSuperAdmin } = useUser()
   const logo = getLogoForUser(user?.email)
   const currentDate = getCurrentFormattedDate()
-  const isHuntUser = user?.name === "The Hunt"
-  const isWeaveStudioUser = user?.name === "Weave Studio"
+  
+  // Map zone names to custom images
+  const zoneImageMap: Record<string, string> = {
+    "The Hunt": "/images/hunt1.jpg",
+    // Add more zone-specific images here as needed
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -169,7 +171,7 @@ export default function ManagementPage() {
             >
               <div className="absolute inset-0 bg-black/50 z-10"></div>
               <img 
-                src={isHuntUser ? "/images/hunt1.jpg" : (zone.image || "/placeholder.svg")} 
+                src={zoneImageMap[zone.name] || zone.image || "/placeholder.svg"}
                 alt={zone.name} 
                 className="w-full h-40 object-cover" 
               />

@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 // Read the JSON file
 const filePath = path.join(__dirname, '9-10.json');

@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "npx @next/codemod@canary next-lint-to-eslint-cli ",
+    "lint": "eslint .",
     "db:setup": "tsx scripts/setup-database.ts",
     "db:seed": "tsx scripts/seed-sensors.ts",
     "users:load": "tsx scripts/load-users.ts"
@@ -74,7 +74,7 @@
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "eslint": "^9.39.1",
+    "eslint": "^8.57.0",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.6",

@@ -91,8 +91,8 @@ export function BarChart({ data, className, baseline, showPercentage }: BarChart
       const chart = chartInstanceRef.current
 
       const originalDraw = chart.draw
-      chart.draw = function () {
-        originalDraw.apply(this, arguments)
+      chart.draw = function (...args) {
+        originalDraw.apply(this, args)
 
         const meta = chart.getDatasetMeta(0)
         const ctx = chart.ctx

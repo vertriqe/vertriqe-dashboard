@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 
 // Read the CSV file
 const csvData = fs.readFileSync('kwuntongweatherhistory.csv', 'utf-8');

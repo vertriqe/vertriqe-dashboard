@@ -60,7 +60,6 @@ interface ChartData {
 export default function EnergyDashboard() {
   const { user } = useUser()
   const [activeTab, setActiveTab] = useState("60mins")
-  const [activeAggregation, setActiveAggregation] = useState("avg")
   const [selectedOffice, setSelectedOffice] = useState("")
   const [chartData, setChartData] = useState<ChartData | null>(null)
   const [baseline, setBaseline] = useState<any>(null)
@@ -230,7 +229,7 @@ export default function EnergyDashboard() {
           start_timestamp: startTimestamp,
           end_timestamp: now,
           downsampling: timeRange.downsampling,
-          aggregation: activeAggregation
+          aggregation: "avg"
         }
       }
       const response = await fetch("/api/tsdb", {
@@ -270,7 +269,7 @@ export default function EnergyDashboard() {
         })
 
         const values = result.data.data.map((point, index) => {
-          let processedValue = point.value * keyConfig.multiplier + keyConfig.offset
+          const processedValue = point.value * keyConfig.multiplier + keyConfig.offset
 
           if (isAccumulated) {
             let accumulatedValue = 0

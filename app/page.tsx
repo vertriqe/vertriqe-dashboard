@@ -226,7 +226,7 @@ export default function Dashboard() {
                 <div className="h-1 bg-slate-700 my-4"></div>
               </div>
               <div>
-                <h3 className="text-xl mb-2">Today's Forecast</h3>
+                <h3 className="text-xl mb-2">Today&apos;s Forecast</h3>
                 <div className="text-slate-300">
                   <p>{dashboardData.forecast.condition}</p>
                   <p>{dashboardData.forecast.range}</p>
