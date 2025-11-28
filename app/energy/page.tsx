@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import React from "react"
-import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -62,7 +61,6 @@ export default function EnergyDashboard() {
   const [activeTab, setActiveTab] = useState("60mins")
   const [selectedOffice, setSelectedOffice] = useState("")
   const [chartData, setChartData] = useState<ChartData | null>(null)
-  const [baseline, setBaseline] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tsdbConfig, setTsdbConfig] = useState<TSDBConfig | null>(null)
@@ -189,18 +187,6 @@ export default function EnergyDashboard() {
       })
     }
   }
-
-  // Fetch baseline regression for thehunt
-  useEffect(() => {
-    if (user?.name === "The Hunt") {
-      fetch("/api/baseline?siteId=hunt")
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (data && data.success) setBaseline(data.data)
-        })
-        .catch(() => setBaseline(null))
-    }
-  }, [user?.name])
 
   const fetchEnergyData = async () => {
     setIsLoading(true)
@@ -387,7 +373,7 @@ export default function EnergyDashboard() {
     if (tsdbConfig && selectedOffice) {
       fetchEnergyData()
     }
-  }, [activeTab, activeAggregation, selectedOffice, tsdbConfig])
+  }, [activeTab, selectedOffice, tsdbConfig])
 
   const handleExportData = () => {
     if (!chartData) return

@@ -8,7 +8,6 @@ import { LineChart } from "@/components/line-chart"
 import { useUser } from "@/contexts/user-context"
 import { getCurrentFormattedDate } from "@/lib/date-utils"
 import { getLogoForUser } from "@/lib/logo-utils"
-import Image from "next/image"
 import type { RssItem } from "@/lib/rss-parser"
 
 interface DashboardData {
@@ -50,7 +49,6 @@ interface DashboardData {
 }
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState("month")
   const [analyticsTab, setAnalyticsTab] = useState("current")
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [esgNews, setEsgNews] = useState<RssItem[]>([])
