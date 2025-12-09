@@ -4,7 +4,7 @@ import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Shield, TrendingUp, DollarSign } from "lucide-react"
+import { Shield, TrendingUp, DollarSign, FileCode } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -44,9 +44,18 @@ export default function SuperAdminPage() {
             Regression Analysis
           </Button>
         </Link>
+        <Link href="/super-admin/automation">
+          <Button 
+            variant="ghost" 
+            className={`rounded-b-none ${pathname === '/super-admin/automation' ? 'border-b-2 border-purple-500 text-purple-400' : 'text-slate-400'}`}
+          >
+            <FileCode className="h-4 w-4 mr-2" />
+            Automation TSV
+          </Button>
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Electric Bill Analysis Card */}
         <Link href="/super-admin/bill-analysis">
           <Card className="bg-gradient-to-br from-green-900/30 to-blue-900/30 border-green-700 hover:border-green-500 transition-all cursor-pointer h-full">
@@ -76,6 +85,23 @@ export default function SuperAdminPage() {
             <CardContent>
               <p className="text-slate-300 text-sm">
                 Create regression models to predict energy consumption based on temperature.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Automation TSV Card */}
+        <Link href="/super-admin/automation">
+          <Card className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border-purple-700 hover:border-purple-500 transition-all cursor-pointer h-full">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <FileCode className="h-8 w-8 text-purple-400" />
+                <CardTitle className="text-white text-xl">Automation TSV</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-300 text-sm">
+                Manage the automation TSV configuration stored in Redis.
               </p>
             </CardContent>
           </Card>

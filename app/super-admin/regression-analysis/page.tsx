@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { TrendingUp, Calculator, Download, DollarSign } from "lucide-react"
+import { TrendingUp, Calculator, Download, DollarSign, FileCode } from "lucide-react"
 import { Chart } from "react-chartjs-2"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -593,6 +593,15 @@ export default function RegressionAnalysisPage() {
           >
             <TrendingUp className="h-4 w-4 mr-2" />
             Regression Analysis
+          </Button>
+        </Link>
+        <Link href="/super-admin/automation">
+          <Button 
+            variant="ghost" 
+            className={`rounded-b-none ${pathname === '/super-admin/automation' ? 'border-b-2 border-purple-500 text-purple-400' : 'text-slate-400'}`}
+          >
+            <FileCode className="h-4 w-4 mr-2" />
+            Automation TSV
           </Button>
         </Link>
       </div>
