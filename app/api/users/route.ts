@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server"
 
 export async function GET() {
-  // Simulate database fetch delay
-  await new Promise((resolve) => setTimeout(resolve, 800))
-
   const users = [
     {
       id: 1,

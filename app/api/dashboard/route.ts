@@ -11,16 +11,12 @@ import {
 import { getDashboardSensorsByOwner } from "@/lib/sensor-config"
 import { fetchTsdbConfig, getKeyConfig } from "@/lib/tsdb-config"
 import { getTsdbUrl, API_CONFIG } from "@/lib/api-config"
+import { SensorData, Baseline, SITE_MAPPING } from "@/lib/types"
 
 interface EnergyConfig {
   savingsPercentage: number
   co2ReductionFactor: number
   costPerKwh: number
-}
-
-interface SensorData {
-  timestamp: number
-  value: number
 }
 
 async function getEnergyConfig(): Promise<EnergyConfig> {
@@ -40,16 +36,9 @@ async function getEnergyConfig(): Promise<EnergyConfig> {
   }
 }
 
-async function getBaselineForUser(userName: string): Promise<any> {
+async function getBaselineForUser(userName: string): Promise<Baseline> {
   try {
-    const siteMapping: Record<string, string> = {
-      "The Hunt": "hunt",
-      "Weave Studio": "weave",
-      "TNL": "tnl",
-      "Telstar Office": "telstar"
-    }
-
-    const siteId = siteMapping[userName]
+    const siteId = SITE_MAPPING[userName]
     if (!siteId) {
       return null
     }
@@ -144,11 +133,6 @@ async function generateBaselineForecast(
   } catch (error) {
     return []
   }
-}
-
-interface SensorData {
-  timestamp: number
-  value: number
 }
 
 type SensorType = 'cumulative' | 'instant'
@@ -385,8 +369,6 @@ async function getUserLocation(email: string): Promise<WeatherLocation> {
 }
 
 export async function GET() {
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
   try {
     const user = await getUserFromToken()
 

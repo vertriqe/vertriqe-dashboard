@@ -2,9 +2,6 @@
 import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
-  // Simulate database update delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
   const body = await request.json()
   const { zoneId, enabled } = body
 

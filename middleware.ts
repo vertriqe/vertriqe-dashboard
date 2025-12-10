@@ -1,13 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { jwtVerify } from "jose"
+import { logger } from "./lib/logger"
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-
-  //bypass if query param is with "token"
-  if (request.nextUrl.searchParams.get("token") === "dualmint_sFD05QtMc1cEoiYt") {
-    return NextResponse.next()
-  }
 
   // Allow access to login page, super-login page, API auth routes, and energy dashboard without authentication
   if (pathname === "/login" || 
@@ -35,7 +31,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   } catch (error) {
     // Token is invalid, redirect to login
-    console.error("JWT verification failed:", error)
+    logger.error("JWT verification failed:", error)
     return NextResponse.redirect(new URL("/login", request.url))
   }
 }

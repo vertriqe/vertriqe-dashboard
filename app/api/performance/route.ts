@@ -6,6 +6,8 @@ import { fetchWeatherData, processWeatherData, type WeatherLocation } from "@/li
 import { fetchTsdbConfig, getKeyConfig, type TSDBResponse } from "@/lib/tsdb-config"
 import { getTsdbUrl } from "@/lib/api-config"
 import { getSensorsByOwner, getZonesByOwner } from "@/lib/sensor-config"
+import { Baseline, SITE_MAPPING } from "@/lib/types"
+import { logger } from "@/lib/logger"
 
 // Office hours for The Hunt: 10:30am to 10:30pm GMT+8
 const OFFICE_START_HOUR = 10
@@ -58,18 +60,11 @@ function formatToGMT8(timestamp: number, period: string): string {
 }
 
 // Helper function to get baseline for a user
-async function getBaselineForUser(userName: string): Promise<any> {
+async function getBaselineForUser(userName: string): Promise<Baseline> {
   try {
-    // Map user names to site IDs
-    const siteMapping: Record<string, string> = {
-      "The Hunt": "hunt",
-      "Hai Sang": "hunt", // Hai Sang is The Hunt user
-      "Weave Studio": "weave"
-    }
-
-    const siteId = siteMapping[userName]
+    const siteId = SITE_MAPPING[userName] || (userName === "Hai Sang" ? "hunt" : null)
     if (!siteId) {
-      console.log(`No baseline mapping for user: ${userName}`)
+      logger.debug(`No baseline mapping for user: ${userName}`)
       return null
     }
 
